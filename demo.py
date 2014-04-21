@@ -4,7 +4,7 @@
 ## Shawn Nock, 2014
 
 import struct
-from bitstring import BitStream
+from bitarray import bitarray
 
 class HuffNode:
     symbol=None
@@ -19,30 +19,18 @@ class HuffNode:
             return True
         return False
     def is_root(self):
-        if self.parent == None:
+        global root
+        if self == root:
             return True
         return False
     def __repr__(self):
-        return "<Symbol: %s; Weight: %s; Root: %s; Leaf: %s; Code: %s>"%(self.symbol, self.weight, self.is_root(), self.is_leaf(), huff_encode(self))
+        return "<Symbol: %s; Weight: %s; Root: %s; Leaf: %s>"%(self.symbol, self.weight, self.is_root(), self.is_leaf())
 
 root=HuffNode()
 NYT=root
 nodes = {}
 nodes[root.weight] = [root]
-
-def huff_encode(node):
-    code=BitStream()
-    if not node.is_leaf() or node is NYT:
-        return None
-    while node.parent is not None:
-        if node.parent.left == node:
-            code.prepend('0b0')
-        else:
-            code.prepend('0b1')
-        node=node.parent
-    return code.bin
         
-
 def huff_swap(node, node2):
     if node.is_root() or node2.is_root():
         return
@@ -73,13 +61,16 @@ def huff_update_tree(node):
         need_update.append(node)
         node=node.parent
     for node in need_update:
-        if not node.weight+1 in nodes or not len(nodes[node.weight+1]):
+        if not node.weight+1 in nodes:
             nodes[node.weight+1]=[node]
         else:
-            huff_swap(node, nodes[node.weight+1][0])
-            nodes[node.weight+1].insert(0, node)
-        if node in nodes[node.weight]:
+            if not node.parent == nodes[node.weight+1][0]:
+                huff_swap(node, nodes[node.weight+1][0])
+                nodes[node.weight+1].insert(0, node)
+        if node.weight in nodes and node in nodes[node.weight]:
             nodes[node.weight].remove(node)
+            if nodes[node.weight] == []:
+                del nodes[node.weight]
         node.weight +=1
         
 def huff_add_node(symbol):
@@ -103,24 +94,28 @@ def huff_add_node(symbol):
 
 def huff_read_block(block):
     node=root
-    buf=BitStream()
+    buf=bitarray()
+    pos=0
 
-    while block.pos <= len(block) - 1:
+    while pos <= len(block) - 1:
+        bit = block[pos]
+        pos += 1
         if node == NYT:
             # We're at the NYT, add a leaf
             print("Received NYT")
-            symbol = block.read('bytes:1')
+            symbol = block[pos:pos+8]
+            pos+=8
             huff_add_node(symbol)
-            buf += symbol
+            buf.append(symbol)
             node=root
             continue
         if node.is_leaf():
+            symbol = node.symbol
             print("Symbol hit: %s" % symbol)
             buf+=node.symbol
             huff_update_tree(node)
             node=root
             continue
-        bit = block.read(1)
         if bit:
             node=node.right
         else:
@@ -137,24 +132,23 @@ class Demo:
                 seq, length = struct.unpack('ii', f.read(8))
                 if seq == -1 or length == -1:
                     break
-                data = BitStream(bytes=f.read(length))
+                data = bitarray()
+                data.frombytes(f.read(length))
                 self.blocks.append([seq, length, data])
 
 class DemoError(IOError):
     def __init__(self, msg):
         IOError.__init__(self)
 
-if __name__ == '__main__':
+def main():
     d = Demo()
     d.load('test.dm_73')
     with open('output', 'wb') as ff:
         for block in d.blocks:
-            try:
-                huff_read_block(block[2]).tofile(ff)
-            except KeyboardInterrupt:
-                print(nodes)
-                print(root)
+            huff_read_block(block[2]).tofile(ff)
             ff.flush()
 
+if __name__ == '__main__':
+    main()
 
 
