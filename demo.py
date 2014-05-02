@@ -9,10 +9,22 @@ from bitarray import bitarray
 class HuffNode:
     symbol=None
     weight=0
+    NYT=False
     
     left=None
     right=None
     parent=None
+
+    def encode(self):
+        code=bitarray()
+        node=self
+        while not node.is_root():
+            if node.parent.left == node:
+                code = bitarray('0') + code
+            else:
+                code = bitarray('1') + code
+            node=node.parent
+        return code
 
     def is_leaf(self):
         if not self.left and not self.right:
@@ -24,16 +36,15 @@ class HuffNode:
             return True
         return False
     def __repr__(self):
-        return "<Symbol: %s; Weight: %s; Root: %s; Leaf: %s>"%(self.symbol, self.weight, self.is_root(), self.is_leaf())
+        return "<Code: %s; Symbol: %s; Weight: %s; Root: %s; Leaf: %s; NYT: %s>"%(self.encode(), self.symbol, self.weight, self.is_root(), self.is_leaf(), self.NYT)
 
 root=HuffNode()
-NYT=root
+root.NYT=True
 nodes = {}
-nodes[root.weight] = [root]
-        
+
 def huff_swap(node, node2):
-    if node.is_root() or node2.is_root():
-        return
+    assert not node == root or node2 == root
+        
     parent=node.parent
     parent2=node2.parent
     node.parent = parent2
@@ -56,43 +67,65 @@ def huff_swap(node, node2):
 def huff_update_tree(node):
     ## Starting with node, backtrack the tree incrementing weights and
     ## adapting the tree as needed
-    need_update=[]
-    while node is not None:
-        need_update.append(node)
-        node=node.parent
-    for node in need_update:
+    while not node == None:
+        # Initialize list if non-existant
+        print("Updating: %s" % node)
         if not node.weight+1 in nodes:
-            nodes[node.weight+1]=[node]
-        else:
-            if not node.parent == nodes[node.weight+1][0]:
-                huff_swap(node, nodes[node.weight+1][0])
-                nodes[node.weight+1].insert(0, node)
+            nodes[node.weight+1]=[]
+        ## Swap with highest priority non-parent by weight
+        for rival in nodes[node.weight+1]:
+            if rival == node.parent:
+                continue
+            if rival == root or node == root:
+                continue
+            huff_swap(node, rival)
+            break
+        # Remove from previous weight class
         if node.weight in nodes and node in nodes[node.weight]:
             nodes[node.weight].remove(node)
-            if nodes[node.weight] == []:
-                del nodes[node.weight]
-        node.weight +=1
+            # Clean up empty lists
+            #if nodes[node.weight] == []:
+            #    del nodes[node.weight]
         
-def huff_add_node(symbol):
+        # Increment the weight and insert at the head of new weight
+        # class
+        node.weight +=1
+        nodes[node.weight].insert(0, node)
+        node=node.parent
+
+def huff_update_tree_new(node):
+    while not node == None:
+        if not node.parent:
+            node.weight += 1
+            break
+        rival = node.parent.left if node.parent.right == node else node.parent.right
+        if node.weight+1 > rival.weight:
+            huff_swap(rival, node)
+        node.weight +=1
+        node=node.parent
+        
+def huff_add_node(symbol, NYT):
+    assert NYT.NYT == True
     left=HuffNode()
     right=HuffNode()
-
-    global NYT
 
     NYT.left=left
     NYT.right=right
     
     left.parent = NYT
     left.symbol = None
+    left.NYT=True
+    NYT.NYT=False
+    NYT.weight = 1
 
     right.parent = NYT
     right.symbol = symbol
+    right.weight = 1
 
-    NYT=left
-    
-    huff_update_tree(right)
+    huff_update_tree_new(NYT.parent)
 
 def huff_read_block(block):
+    global root
     node=root
     buf=bitarray()
     pos=0
@@ -100,12 +133,12 @@ def huff_read_block(block):
     while pos <= len(block) - 1:
         bit = block[pos]
         pos += 1
-        if node == NYT:
+        if node.NYT:
             # We're at the NYT, add a leaf
             print("Received NYT")
             symbol = block[pos:pos+8]
             pos+=8
-            huff_add_node(symbol)
+            NYT=huff_add_node(symbol,node)
             buf.append(symbol)
             node=root
             continue
@@ -113,7 +146,7 @@ def huff_read_block(block):
             symbol = node.symbol
             print("Symbol hit: %s" % symbol)
             buf+=node.symbol
-            huff_update_tree(node)
+            huff_update_tree_new(node)
             node=root
             continue
         if bit:
@@ -147,6 +180,7 @@ def main():
         for block in d.blocks:
             huff_read_block(block[2]).tofile(ff)
             ff.flush()
+            break
 
 if __name__ == '__main__':
     main()
