@@ -1,4 +1,4 @@
-#!/bin/env/python
+#!/bin/env python
 
 ## ql-demo-parse.py
 ## Shawn Nock, 2014
@@ -50,11 +50,10 @@ NYT=MAX_SYMBOLS
 class HuffmanTree:
     tree=None # Root node
     lhead=None
-    ltail=None
     loc={}    # Hash by symbol (int)
 
     def __init__(self):
-        self.tree = self.lhead = self.ltail = self.loc[NYT] = Node()
+        self.tree = self.lhead = self.loc[NYT] = Node()
         self.tree.symbol = NYT
         self.tree.weight = 0
         self.lhead.next = self.lhead.prev = None
@@ -64,6 +63,7 @@ class HuffmanTree:
         pass
         
     def _swap_list(self, node1, node2):
+        #print("Swapping list on {}, {}".format(node1, node2))
         par1 = node1.next
         node1.next = node2.next
         node2.next = par1
@@ -88,6 +88,7 @@ class HuffmanTree:
             node2.prev.next = node2
 
     def _swap_tree(self, node1, node2):
+        print("Swapping tree on {}, {}".format(node1, node2))
         par1 = node1.parent
         par2 = node2.parent
 
@@ -120,10 +121,10 @@ class HuffmanTree:
                 self._swap_tree(node.head, node)
             self._swap_list(node.head, node)
 
-        if node.prev and node.prev.weight == node.weight:
-            node.head=node.prev
-        else:
-            node.head=None
+        #if node.prev and node.prev.weight == node.weight:
+        #    node.head=node.prev
+        #else:
+        #    node.head=None
 
         node.weight += 1
         
@@ -142,57 +143,69 @@ class HuffmanTree:
 
     def add_ref(self, symbol):
         if not symbol in self.loc:
-            right = Node()
-            left = Node()
+            new_leaf = Node()
+            new_internal = Node()
 
-            left.symbol = None
-            left.weight = 1
-            left.next = self.lhead.next
-
-            if self.lhead.next:
-                self.lhead.next.prev = left
-                if self.lhead.next.weight == 1:
-                    left.head = self.lhead.next.head
-                else:
-                    left.head = left
-            else:
-                left.head = left
-            self.lhead.next = left
-            left.prev = self.lhead
-
-            right.symbol = symbol
-            right.weight = 1
-            right.next = self.lhead.next
+            new_internal.symbol = None
+            new_internal.weight = 1
+            # Insert new_internal into list after NYT
+            new_internal.next = self.lhead.next
 
             if self.lhead.next:
-                self.lhead.next.prev = right
+                self.lhead.next.prev = new_internal
                 if self.lhead.next.weight == 1:
-                    right.head = self.lhead.next.head
+                    new_internal.head = self.lhead.next.head
                 else:
-                    assert False # Should never happen
+                    new_internal.head = new_internal
             else:
-                assert False # Should never happen
+                new_internal.head = new_internal
+            self.lhead.next = new_internal
+            new_internal.prev = self.lhead
 
-            self.lhead.next = right
-            right.prev = self.lhead
-            right.left = right.right = None
+            new_leaf.symbol = symbol
+            new_leaf.weight = 1
+            # Insert new_leaf into list after NYT, before new_internal
+            new_leaf.next = self.lhead.next
 
+            if self.lhead.next:
+                self.lhead.next.prev = new_leaf
+                if self.lhead.next.weight == 1:
+                    new_leaf.head = self.lhead.next.head
+                else:
+                    assert False # Should never happen, new_internal
+                                 # weight is always 1
+            else:
+                assert False # Should never happen, new_internal
+                             # exists and was inserted already
+
+            self.lhead.next = new_leaf
+            new_leaf.prev = self.lhead
+
+            # self.lhead is guarateed to be NYT, but is in the tree
+            # where the new_internal should be... Put new_internal
+            # where it should be
             if self.lhead.parent:
                 if self.lhead.parent.left == self.lhead:
-                    self.lhead.parent.left = left
+                    self.lhead.parent.left = new_internal
                 else:
-                    self.lhead.parent.right = left
+                    self.lhead.parent.right = new_internal
             else:
-                self.tree = left
-
-            left.right = right
-            left.left = self.lhead
-            left.parent = self.lhead.parent
-            self.lhead.parent = right.parent = left
-            self.loc[symbol] = right
+                self.tree = new_internal
             
-            self._increment(left.parent)
+            # Setup the new_internal parent and children, and the backrefs
+            new_internal.right = new_leaf
+            new_internal.left = self.lhead
+            new_internal.parent = self.lhead.parent
+            self.lhead.parent = new_leaf.parent = new_internal
+            
+            # Add the new leaf to the symbol hash table
+            self.loc[symbol] = new_leaf
+            
+            # Start the update with new_internal's parent
+            self._increment(new_internal.parent)
         else:
+            # Since the node exists in the tree, look it up and run
+            # the tree update
             self._increment(self.loc[symbol])
     
     def _decode_byte(self, buffer, pos):
@@ -220,7 +233,6 @@ class HuffmanTree:
 class Node:
     symbol=None
     weight=0
-    NYT=False
     
     ## Tree Structures
     left=None
@@ -251,24 +263,20 @@ class Node:
         if self.parent == None:
             return True
         return False
-    def __repr__(self):
-        if self.is_leaf():
-            return "Symbol: %s; Code: %s"%(self.symbol, self.encode())
-        return "INTERNAL_NODE"
-        #return "<Code: %s; Symbol: %s; Weight: %s; Root: %s; Leaf: %s; NYT: %s>"%(self.encode(), self.symbol, self.weight, self.is_root(), self.is_leaf(), self.NYT)
-
-
-nodes = {}
+    def is_NYT(self):
+        return self.symbol == NYT
 
 def huff_init(tree):
-    for i in range(256):
-        print(i)
-        symbol = bytes(range(i,i+1))
-        for j in range(initial_probabilities[i]):
+    for val in range(256):
+        huff_init_val(tree, val)
+
+def huff_init_val(tree, val):
+    symbol = bytes(range(val,val+1))
+    for j in range(initial_probabilities[val]):
             tree.add_ref(symbol)
 
-def huff_read_block(root, block):
-    node=root
+def huff_read_block(tree, block):
+    node=tree.tree
     buf=bytes()
     pos=0
 
@@ -285,12 +293,12 @@ def huff_read_block(root, block):
                 node=node.right
             else:
                 node=node.left
-        if node.is_leaf() and node.NYT:
+        if node.is_leaf() and node == tree.loc[NYT]:
             # We're at the NYT, add leaves
             print("Received NYT")
             symbol = block[pos:pos+8].tobytes()
             pos+=8
-            NYT=huff_add_node(symbol,node)
+            #NYT=huff_add_node(symbol,node)
             buf+=symbol
         else:
             symbol = node.symbol
@@ -323,6 +331,15 @@ def main():
             ff.write(huff_read_block(root, block[2]))
             ff.flush()
 
+def print_tree(tree):
+    node = tree
+    rights = []
+    while node:
+        print("Node: {}, Weight: {}, Symbol: {}".format(node, node.weight, node.symbol),)
+        rights.append(node.right)
+        node=node.left
+    for node in rights:
+        print("Node: {}, Weight: {}, Symbol: {}".format(node, node.weight, node.symbol),)
 
 if __name__ == '__main__':
     main()
