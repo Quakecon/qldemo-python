@@ -8,7 +8,6 @@ from bitarray import bitarray
 from binascii import unhexlify
 from copy import deepcopy
 
-
 # Constants
 initial_probabilities = [
        0x3D1CB, 0x0A0E9, 0x01894, 0x01BC2, 0x00E92, 0x00EA6, 0x017DE, 0x05AF3,
@@ -43,6 +42,7 @@ initial_probabilities = [
        0x01E6F, 0x003BA, 0x00509, 0x003A5, 0x00467, 0x00C87, 0x003FC, 0x0039F,
        0x0054B, 0x00300, 0x00410, 0x002E9, 0x003B8, 0x00325, 0x00431, 0x002E4,
        0x003F5, 0x00325, 0x003F0, 0x0031C, 0x003E4, 0x00421, 0x02CC1, 0x034C0]
+
 MAX_SYMBOLS=256
 NYT=MAX_SYMBOLS
 
@@ -72,9 +72,9 @@ class HuffmanTree:
         node1.prev = node2.prev
         node2.prev = par1
 
-        if node1.next == node1:
+        if node1.next is node1:
             node1.next = node2
-        if node2.next == node2:
+        if node2.next is node2:
             node2.next = node1 
 
         if node1.next:
@@ -93,7 +93,7 @@ class HuffmanTree:
         par2 = node2.parent
 
         if par1:
-            if par1.left == node1:
+            if par1.left is node1:
                 par1.left = node2
             else:
                 par1.right = node2
@@ -101,7 +101,7 @@ class HuffmanTree:
             self.tree = node2
 
         if par2:
-            if par2.left == node2:
+            if par2.left is node2:
                 par2.left = node1  
             else:
                 par2.right = node1
@@ -117,27 +117,27 @@ class HuffmanTree:
             return
 
         if node.next and node.next.weight == node.weight:
-            if not node.head == node.parent:
+            if node.head is not node.parent:
                 self._swap_tree(node.head, node)
             self._swap_list(node.head, node)
 
-        #if node.prev and node.prev.weight == node.weight:
-        #    node.head=node.prev
-        #else:
-        #    node.head=None
+        if node.prev and node.prev.weight == node.weight:
+            node.head = node.prev
+        else:
+            node.head = None
 
         node.weight += 1
         
         if node.next and node.next.weight == node.weight:
             node.head = node.next.head
         else:
-            node.head=node
+            node.head = node
 
         if node.parent:
             self._increment(node.parent)
-            if node.prev == node.parent:
+            if node.prev is node.parent:
                 self._swap_list(node, node.parent)
-                if node.head == node:
+                if node.head is node:
                     node.head = node.parent
         return
 
@@ -185,7 +185,7 @@ class HuffmanTree:
             # where the new_internal should be... Put new_internal
             # where it should be
             if self.lhead.parent:
-                if self.lhead.parent.left == self.lhead:
+                if self.lhead.parent.left is self.lhead:
                     self.lhead.parent.left = new_internal
                 else:
                     self.lhead.parent.right = new_internal
@@ -248,7 +248,7 @@ class Node:
         code=bitarray()
         node=self
         while not node.is_root():
-            if node.parent.left == node:
+            if node.parent.left is node:
                 code = bitarray('0') + code
             else:
                 code = bitarray('1') + code
@@ -260,7 +260,7 @@ class Node:
             return True
         return False
     def is_root(self):
-        if self.parent == None:
+        if self.parent is None:
             return True
         return False
     def is_NYT(self):
@@ -293,7 +293,7 @@ def huff_read_block(tree, block):
                 node=node.right
             else:
                 node=node.left
-        if node.is_leaf() and node == tree.loc[NYT]:
+        if node.is_leaf() and node is tree.loc[NYT]:
             # We're at the NYT, add leaves
             print("Received NYT")
             symbol = block[pos:pos+8].tobytes()
