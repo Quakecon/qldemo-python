@@ -4,9 +4,13 @@
 ## Shawn Nock, 2014
 
 import struct
+import pickle
+import sys
 from bitarray import bitarray
 from binascii import unhexlify
 from copy import deepcopy
+
+sys.setrecursionlimit(10000)
 
 # Constants
 initial_probabilities = [
@@ -58,12 +62,19 @@ class HuffmanTree:
         self.tree.weight = 0
         self.lhead.next = self.lhead.prev = None
         self.tree.parent = self.tree.left = self.tree.right = None
+        for val in range(256):
+            print(val)
+            self._huff_init_val(val)
+
+    def _huff_init_val(self, val):
+        symbol = bytes(range(val,val+1))
+        for j in range(initial_probabilities[val]):
+            self.add_ref(symbol)
 
     def decompress(self, buffer):
         pass
         
     def _swap_list(self, node1, node2):
-        #print("Swapping list on {}, {}".format(node1, node2))
         par1 = node1.next
         node1.next = node2.next
         node2.next = par1
@@ -88,25 +99,27 @@ class HuffmanTree:
             node2.prev.next = node2
 
     def _swap_tree(self, node1, node2):
-        print("Swapping tree on {}, {}".format(node1, node2))
         par1 = node1.parent
         par2 = node2.parent
+        was_left = None
 
         if par1:
             if par1.left is node1:
                 par1.left = node2
+                was_left = True
             else:
                 par1.right = node2
-        else:
-            self.tree = node2
 
-        if par2:
+        if par2 is not par1:
             if par2.left is node2:
-                par2.left = node1  
+                par2.left = node1
             else:
                 par2.right = node1
         else:
-            self.tree = node1
+            if was_left:
+                par2.right = node1
+            else:
+                par2.left = node1
 
         node1.parent = par2
         node2.parent = par1
@@ -116,29 +129,16 @@ class HuffmanTree:
         if not node:
             return
 
-        if node.next and node.next.weight == node.weight:
-            if node.head is not node.parent:
-                self._swap_tree(node.head, node)
-            self._swap_list(node.head, node)
-
-        if node.prev and node.prev.weight == node.weight:
-            node.head = node.prev
-        else:
-            node.head = None
+        if node.highest_in_block() \
+           and node is not node.highest_in_block() \
+           and node.highest_in_block() is not node.parent:
+            self._swap_tree(node, node.highest_in_block())
+            self._swap_list(node, node.highest_in_block())
 
         node.weight += 1
         
-        if node.next and node.next.weight == node.weight:
-            node.head = node.next.head
-        else:
-            node.head = node
-
         if node.parent:
             self._increment(node.parent)
-            if node.prev is node.parent:
-                self._swap_list(node, node.parent)
-                if node.head is node:
-                    node.head = node.parent
         return
 
     def add_ref(self, symbol):
@@ -153,12 +153,6 @@ class HuffmanTree:
 
             if self.lhead.next:
                 self.lhead.next.prev = new_internal
-                if self.lhead.next.weight == 1:
-                    new_internal.head = self.lhead.next.head
-                else:
-                    new_internal.head = new_internal
-            else:
-                new_internal.head = new_internal
             self.lhead.next = new_internal
             new_internal.prev = self.lhead
 
@@ -169,11 +163,6 @@ class HuffmanTree:
 
             if self.lhead.next:
                 self.lhead.next.prev = new_leaf
-                if self.lhead.next.weight == 1:
-                    new_leaf.head = self.lhead.next.head
-                else:
-                    assert False # Should never happen, new_internal
-                                 # weight is always 1
             else:
                 assert False # Should never happen, new_internal
                              # exists and was inserted already
@@ -242,7 +231,6 @@ class Node:
     ## Linked List Structures
     next=None
     prev=None
-    head=None  # Highest ranked node in block (weight group)
 
     def encode(self):
         code=bitarray()
@@ -265,47 +253,38 @@ class Node:
         return False
     def is_NYT(self):
         return self.symbol == NYT
+    def highest_in_block(self):
+        node = self
+        while node and node.weight == self.weight:
+            node=node.next
+        return node.prev if node else self
 
-def huff_init(tree):
-    for val in range(256):
-        huff_init_val(tree, val)
+    def __repr__(self):
+        return "<Node; Symbol: {}, Code: {}>".format(self.symbol, self.encode()) if self.symbol else object.__repr__(self)
 
-def huff_init_val(tree, val):
-    symbol = bytes(range(val,val+1))
-    for j in range(initial_probabilities[val]):
-            tree.add_ref(symbol)
 
-def huff_read_block(tree, block):
-    node=tree.tree
+def huff_read_block(huff, block):
+    node=huff.tree
     buf=bytes()
     pos=0
 
     while pos <= len(block) - 1:
         while not node.is_leaf():
-            # Should never happen
             if pos > len(block) - 1:
-                print(pos, len(block))
+                print("You don goofed")
                 return buf
-            print(pos,len(block))
             bit = block[pos]
             pos += 1
             if bit:
                 node=node.right
             else:
                 node=node.left
-        if node.is_leaf() and node is tree.loc[NYT]:
-            # We're at the NYT, add leaves
-            print("Received NYT")
-            symbol = block[pos:pos+8].tobytes()
-            pos+=8
-            #NYT=huff_add_node(symbol,node)
-            buf+=symbol
+        if node.is_NYT():
+            print("You don goofed again")
         else:
-            symbol = node.symbol
-            print("Symbol hit: %s" % symbol)
             buf+=node.symbol
-            huff_update_tree(node)
-        node=root
+            huff.add_ref(node.symbol)
+        node=huff.tree
     return buf
  
 class Demo:
@@ -322,24 +301,19 @@ class Demo:
                 self.blocks.append([seq, length, data])
 
 def main():
-    huff = HuffmanTree()
-    huff_init(huff)
+    try:
+        cache_file = open('huff_tree.pickle', mode='rb')
+        huff = pickle.load(cache_file)
+    except:
+        with open('huff_tree.pickle', mode='wb') as cache_file:
+            huff = HuffmanTree()
+            pickle.dump(huff, cache_file, pickle.HIGHEST_PROTOCOL)
     d = Demo()
     d.load('test.dm_73')
     with open('output', 'wb') as ff:
         for block in d.blocks:
-            ff.write(huff_read_block(root, block[2]))
+            ff.write(huff_read_block(huff, block[2]))
             ff.flush()
-
-def print_tree(tree):
-    node = tree
-    rights = []
-    while node:
-        print("Node: {}, Weight: {}, Symbol: {}".format(node, node.weight, node.symbol),)
-        rights.append(node.right)
-        node=node.left
-    for node in rights:
-        print("Node: {}, Weight: {}, Symbol: {}".format(node, node.weight, node.symbol),)
 
 if __name__ == '__main__':
     main()
