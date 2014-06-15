@@ -125,6 +125,16 @@ class HuffmanTree:
         node2.parent = par1
         return
 
+    def is_valid(self):
+        node = self.tree
+        while node:
+            if node.prev and not node.prev.weight <= node.weight:
+                return False
+            if node.next and not node.next.weight >= node.weight:
+                return False
+            node=node.next
+        return True
+
     def _increment(self, node):
         if not node:
             return
@@ -199,23 +209,25 @@ class HuffmanTree:
     
     def _decode_byte(self, buffer, pos):
         node=self.tree
-        while node and not node.symbol:
+        initial=pos
+        while not node.is_leaf():
             if buffer[pos]:
                 node=node.right
             else:
                 node=node.left
             pos += 1
-        if not node:
-            assert False # Invalid Tree
         return (node.symbol, pos)
 
     def decompress(self, buffer):
         output = b''
         pos = 0
+        count = 0
         while pos <= len(buffer)-1:
+            initial=pos
             byte, pos = self._decode_byte(buffer, pos)
             self.add_ref(byte) # Update tree
             output += byte
+            count += pos-initial
         return output
         
 
@@ -268,17 +280,15 @@ def huff_read_block(huff, block):
     buf=bytes()
     pos=0
 
-    while pos <= len(block) - 1:
-        while not node.is_leaf():
-            if pos > len(block) - 1:
-                print("You don goofed")
-                return buf
+    while pos < len(block) - 1:
+        if not node.is_leaf():
             bit = block[pos]
             pos += 1
             if bit:
                 node=node.right
             else:
                 node=node.left
+            continue
         if node.is_NYT():
             print("You don goofed again")
         else:
@@ -308,12 +318,14 @@ def main():
         with open('huff_tree.pickle', mode='wb') as cache_file:
             huff = HuffmanTree()
             pickle.dump(huff, cache_file, pickle.HIGHEST_PROTOCOL)
+    assert huff.is_valid()
     d = Demo()
     d.load('test.dm_73')
     with open('output', 'wb') as ff:
         for block in d.blocks:
-            ff.write(huff_read_block(huff, block[2]))
+            ff.write(huff.decompress(block[2]))
             ff.flush()
+            break
 
 if __name__ == '__main__':
     main()
