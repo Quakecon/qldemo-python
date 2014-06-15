@@ -216,19 +216,27 @@ class HuffmanTree:
             else:
                 node=node.left
             pos += 1
+        print(node.symbol)
         return (node.symbol, pos)
 
-    def decompress(self, buffer):
-        output = b''
-        pos = 0
-        count = 0
-        while pos <= len(buffer)-1:
-            initial=pos
-            byte, pos = self._decode_byte(buffer, pos)
-            self.add_ref(byte) # Update tree
-            output += byte
-            count += pos-initial
-        return output
+    def decode(self, buffer, pos, n):
+        out = b''
+        for x in range(n):
+            c, pos = self._decode_byte(buffer, pos)
+            out += c
+        return out
+
+    # def decompress(self, buffer):
+    #     output = b''
+    #     pos = 0
+    #     count = 0
+    #     while pos <= len(buffer)-1:
+    #         initial=pos
+    #         byte, pos = self._decode_byte(buffer, pos)
+    #         self.add_ref(byte) # Update tree
+    #         output += byte
+    #         count += pos-initial
+    #     return output
         
 
 class Node:
@@ -299,16 +307,28 @@ def huff_read_block(huff, block):
  
 class Demo:
     blocks = []
+    block_offset = 0
 
-    def load(self, filename):
-        with open(filename, 'rb') as f:
-            while True:
-                seq, length = struct.unpack('ii', f.read(8))
-                if seq == -1 or length == -1:
-                    break
-                data = bitarray()
-                data.frombytes(f.read(length))
-                self.blocks.append([seq, length, data])
+    def __init__(self, huff, filename):
+        self.huff = huff
+        self.f = open(filename, 'rb')
+        while True:
+            seq, length = struct.unpack('<ll', self.f.read(8))
+            print("seq {}".format(seq))
+            print("len {}".format(length))
+            if seq == -1 or length == -1:
+                break
+            data = bitarray()
+            data.frombytes(self.f.read(length))
+            self.blocks.append([seq, length, data])
+                
+    def parse(self):
+        for block in self.blocks:
+            self.block_offset = 0
+            ack, cmd = struct.unpack('<iB', self.huff.decode(block[2], self.block_offset, 5))
+            self.block_offset += 5
+            print("cmd {}".format(cmd))
+            break
 
 def main():
     try:
@@ -319,13 +339,14 @@ def main():
             huff = HuffmanTree()
             pickle.dump(huff, cache_file, pickle.HIGHEST_PROTOCOL)
     assert huff.is_valid()
-    d = Demo()
-    d.load('test.dm_73')
-    with open('output', 'wb') as ff:
-        for block in d.blocks:
-            ff.write(huff.decompress(block[2]))
-            ff.flush()
-            break
+    d = Demo(huff, 'test.dm_73')
+    print(len(d.blocks))
+    d.parse()
+    # with open('output', 'wb') as ff:
+    #     for block in d.blocks:
+    #         ff.write(huff.decompress(block[2]))
+    #         ff.flush()
+    #         break
 
 if __name__ == '__main__':
     main()
