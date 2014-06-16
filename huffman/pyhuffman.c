@@ -209,7 +209,6 @@ static PyObject * py_open( PyObject *self, PyObject *args )
     return NULL;
 
   file = fopen( f, "rb" );
-  printf( "opening file %s\n", f );
   if( file != NULL )
     return Py_True;
   return Py_False;

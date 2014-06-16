@@ -1,3 +1,7 @@
 .env
 output
 *.dm_73
+demos/*
+api/*
+huffman/build
+__pycache__

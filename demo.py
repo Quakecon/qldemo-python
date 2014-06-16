@@ -3,10 +3,19 @@
 ## ql-demo-parse.py
 ## Shawn Nock, 2014
 
+# Standard Lib
+import json
+import os
+import re
 import struct
+
+# C-Extension wrapping Q3A Huffman Routines
 import huffman
 
 # Constants
+nick_clan_filter = re.compile('\^[0-7]|\u0019')
+DEMO_PATH='demos/'
+OUTPUT_PATH='api/'
 
 ## Message Types
 SVC_BAD=0
@@ -20,9 +29,32 @@ SVC_SNAPSHOT=7
 SVC_EOF=8
 
 # Classes
+
+class Gamestate:
+    config = {}
+    configstring = {}
+
+class PlayerState:
+    pass
+
+class ServerCommand:
+    seq = None
+    cmd = None
+    string = None
+
+    def __init__(self, seq, string):
+        self.seq = seq
+        self.cmd = string.split()[0]
+        if self.cmd == 'chat':
+            self.string = filter_qstring(' '.join(string.split()[1:])[4:])
+        else:
+            self.string = ' '.join(string.split()[1:])
+
  
 class Demo:
     def __init__(self, filename):
+        self.gamestate = Gamestate()
+        self.decoded_packets = []
         huffman.init()
         huffman.open(filename)
 
@@ -30,25 +62,22 @@ class Demo:
         while True:
             seq=huffman.readrawlong()
             length=huffman.readrawlong()
-            #print("seq {}".format(seq))
-            #print("len {}".format(length))
             if seq == -1 or length == -1:
-                print("End of File Reached")
                 break
             huffman.fill(length)
             ack = huffman.readlong()
             cmd = huffman.readbyte()
             if cmd == SVC_GAMESTATE: 
-                self.parse_gamestate()
+                r = self.parse_gamestate()
             elif cmd == SVC_SERVERCOMMAND: 
-                self.parse_servercommand()
-            elif cmd == SVC_SNAPSHOT: 
-                self.parse_playerstate()
-            yield cmd
+                r = self.parse_servercommand()
+            elif cmd == SVC_SNAPSHOT:
+                continue
+                r = self.parse_playerstate()
+            yield r
 
     def parse_gamestate(self):
-        print("Gamestate")
-        print(huffman.readlong())
+        ack=huffman.readlong()
         while True:
             cmd = huffman.readbyte()
             if cmd == SVC_EOF:
@@ -57,27 +86,55 @@ class Demo:
                 self.parse_configstring()
             elif cmd == SVC_BASELINE: 
                 self.parse_baseline()
+        return {'type': 'gamestate',
+                'config': self.gamestate.config}
 
     def parse_configstring(self):
         i = huffman.readshort()
         string = huffman.readbigstring()
-        print(i, string.replace('\\',"\n"))
+        if string.startswith('\\'):
+            fields = string.split('\\')
+            for x in range(1, len(fields)-1, 2):
+                self.gamestate.config[fields[x]]=fields[x+1]
+        else:
+            self.gamestate.config[str(i)]=string
+        self.gamestate.configstring[i]=string
 
     def parse_baseline(self):
-        pass
+        return {'type': 'baseline'}
 
     def parse_servercommand(self):
-        print("Server Command")
-        pass
+        seq = huffman.readlong()
+        string = huffman.readstring()
+        
+        cmd = string.split()[0]
+        if cmd == 'chat':
+            string = filter_qstring(' '.join(string.split()[1:])[4:])
+        else:
+            string = ' '.join(string.split()[1:])
+        return {'type': 'servercommand',
+                'seq': seq,
+                'cmd': cmd,
+                'string': string}
 
     def parse_playerstate(self):
-        print("Player State")
-        pass
+        return {'type': 'playerstate'}
+
+def filter_qstring(string):
+    ## Takes out formatting characters in chats, playernames, &c
+    return nick_clan_filter.sub('', string)
 
 def main():
-    d = Demo('test.dm_73')
-    for packet in d:
-        pass
+    for file in os.listdir(DEMO_PATH):
+        if not file.endswith('dm_73'):
+            continue
+        if os.path.isfile(OUTPUT_PATH+''.join([file[:-5],"json"])):
+            print("found existing file")
+            continue
+        print("Processing: {}".format(file))
+        d = Demo(DEMO_PATH+file)
+        with open(OUTPUT_PATH+''.join([file[:-5],"json"]), 'w') as output_file:
+            json.dump(list(d), output_file, ensure_ascii=False, indent=2)
 
 if __name__ == '__main__':
     main()
