@@ -3,5 +3,7 @@ output
 *.dm_73
 demos/*
 api/*
-huffman/build
+build
 __pycache__
+*.so
+*pyc
