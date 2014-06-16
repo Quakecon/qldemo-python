@@ -14,8 +14,6 @@ import huffman
 
 # Constants
 nick_clan_filter = re.compile('\^[0-7]|\u0019')
-DEMO_PATH='demos/'
-OUTPUT_PATH='api/'
 
 ## Message Types
 SVC_BAD=0
@@ -51,7 +49,7 @@ class ServerCommand:
             self.string = ' '.join(string.split()[1:])
 
  
-class Demo:
+class QLDemo:
     def __init__(self, filename):
         self.gamestate = Gamestate()
         self.decoded_packets = []
@@ -123,20 +121,5 @@ class Demo:
 def filter_qstring(string):
     ## Takes out formatting characters in chats, playernames, &c
     return nick_clan_filter.sub('', string)
-
-def main():
-    for file in os.listdir(DEMO_PATH):
-        if not file.endswith('dm_73'):
-            continue
-        if os.path.isfile(OUTPUT_PATH+''.join([file[:-5],"json"])):
-            print("found existing file")
-            continue
-        print("Processing: {}".format(file))
-        d = Demo(DEMO_PATH+file)
-        with open(OUTPUT_PATH+''.join([file[:-5],"json"]), 'w') as output_file:
-            json.dump(list(d), output_file, ensure_ascii=False, indent=2)
-
-if __name__ == '__main__':
-    main()
 
 

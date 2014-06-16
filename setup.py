@@ -1,21 +1,22 @@
+import ez_setup
+ez_setup.use_setuptools()
 from setuptools import setup, Extension, find_packages
 
 m = Extension('huffman',
-              sources = ['huffman/huffman.c','huffman/pyhuffman.c'],
-              includes = ['huffman'])
+              sources = ['huffman/huffman.c','huffman/pyhuffman.c'])
 
-setup (name = 'ql-demo-json',
-       version = '0.1',
+setup (name = 'QLDemo',
+       version = '0.2',
        ext_modules = [m],
-       packages = ['huffman'],
-       package_data = {'': ['*.h']},
-       scripts = ['demo.py'],
+       packages = find_packages(),
+       scripts = ['qldemo2json.py','ez_setup.py'],
        author = "Shawn Nock",
        author_email = "nock@nocko.se",
-       description = "This package converts Quakelive Demo files in JSON",
+       description = "Wrapper for Q3A Huffman Code Routines and QuakeLive Demo Utility Classes",
        license = "GPLv3",
        keywords = "quake quakelive demo dm_73 quakecon",
-       url = "https://aphr.asia/gitweb/?p=qldemo-python.git;a=summary"
+       url = "https://aphr.asia/gitweb/?p=qldemo-python.git;a=summary",
+       zip_safe = True
 )
 
 
