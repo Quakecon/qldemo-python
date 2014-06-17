@@ -103,7 +103,7 @@ static int readLong( msg_t* msg ) {
 }
 
 static char* readString( msg_t* msg ) {
-    size_t l;
+   size_t l;
     int c;
 
     l = 0;
@@ -166,12 +166,14 @@ static PyObject * py_init( PyObject *self, PyObject *args )
       Huff_addRef( &msgHuff.decompressor, (byte) i );
 
   //data = ( byte *)malloc( sizeof( byte ) * MAX_MSGLEN );
+  Py_INCREF(Py_True);
   return Py_True;
 }
 
 static PyObject * py_cleanup( PyObject *self, PyObject *args )
 {
   //free( data );
+  Py_INCREF(Py_True);
   return Py_True;
 }
 
@@ -209,8 +211,11 @@ static PyObject * py_open( PyObject *self, PyObject *args )
     return NULL;
 
   file = fopen( f, "rb" );
-  if( file != NULL )
+  if( file != NULL ) {
+    Py_INCREF(Py_True);
     return Py_True;
+  }
+  Py_INCREF(Py_False);
   return Py_False;
 }
 
@@ -220,8 +225,10 @@ static PyObject * py_close( PyObject *self, PyObject *args )
   {
     fclose( file );
     file = NULL;
+    Py_INCREF(Py_True);
     return Py_True;
   }
+  Py_INCREF(Py_False);
   return Py_False;
 }
 
@@ -257,12 +264,22 @@ static PyObject * py_readlong( PyObject *self, PyObject *args )
 
 static PyObject * py_readstring( PyObject *self, PyObject *args )
 {
-  return Py_BuildValue( "s", readString( &msg ) );
+#if PY_MAJOR_VERSION >= 3
+  char* bob = readString( &msg );
+  return PyUnicode_DecodeLatin1(bob, strlen(bob), "strict" );
+#else
+  return Py_BuildValue( "y", readString( &msg ));
+#endif
 }
 
 static PyObject * py_readbigstring( PyObject *self, PyObject *args )
 {
-  return Py_BuildValue( "s", readBigString( &msg ) );
+#if PY_MAJOR_VERSION >= 3
+  char* bob = readString( &msg );
+  return PyUnicode_DecodeLatin1(bob, strlen(bob), "strict" );
+#else
+  return Py_BuildValue( "y", readBigString( &msg ));
+#endif
 }
 
 
