@@ -15,11 +15,7 @@ parser.add_argument('file',
 
 args = parser.parse_args()
 
-print(args)
-
-
 def main():
-    print("Processing: {}".format(args.file))
     d = QLDemo(args.file)
     json.dump(list(d), sys.stdout, ensure_ascii=False, indent=2)
     return 0

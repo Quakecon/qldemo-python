@@ -5,8 +5,8 @@ from setuptools import setup, Extension, find_packages
 m = Extension('huffman',
               sources = ['huffman/huffman.c','huffman/pyhuffman.c'])
 
-setup (name = 'QLDemo',
-       version = '0.2',
+setup (name = 'ql-demo',
+       version = '0.3',
        ext_modules = [m],
        packages = find_packages(),
        scripts = ['qldemo2json.py','ez_setup.py','qldemosummary.py'],
