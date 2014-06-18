@@ -21,7 +21,7 @@ def main():
         print("Processing: {}".format(file))
         d = QLDemo(DEMO_PATH+file)
         with open(OUTPUT_PATH+''.join([file[:-5],"json"]), 'w') as output_file:
-            json.dump(list(d), output_file, ensure_ascii=False, indent=2)
+            json.dump(list(d), output_file, sort_keys=True, ensure_ascii=False, indent=2)
 
 if __name__ == '__main__':
     main()

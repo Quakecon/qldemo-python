@@ -17,10 +17,6 @@ from qldemo.constants import *
 
 # Classes
 
-class Gamestate:
-    config = {}
-    configstring = {}
-
 class PlayerState:
     pass
 
@@ -36,9 +32,12 @@ class ServerCommand:
 
  
 class QLDemo:
+    gamestate={'configstrings': {},
+               'config': {},
+               'players': [],
+               'spectators': [],
+               'teams': []}
     def __init__(self, filename):
-        self.gamestate = Gamestate()
-        self.players = []
         huffman.init()
         huffman.open(filename)
 
@@ -70,25 +69,48 @@ class QLDemo:
                 self.parse_configstring()
             elif cmd == SVC_BASELINE: 
                 self.parse_baseline()
-        return {'type': 'gamestate',
-                'config': self.gamestate.config}
+        return self.gamestate
 
-    def parse_configstring(self):
+    def parse_configstring(self): 
         i = huffman.readshort()
         string = huffman.readbigstring()
-        if string.startswith('\\'):
-            fields = string.split('\\')
-            for x in range(1, len(fields)-1, 2):
-                self.gamestate.config[fields[x]]=fields[x+1]
-        elif string.startswith('n\\'):
-            fields = string.split('\\')
-            player = {}
-            for x in range(0, len(fields), 2):
-                player[fields[x]]=fields[x+1]
-            self.players.append(player)
-        else:
-            self.gamestate.config[str(i)]=string
-        self.gamestate.configstring[i]=string
+        dest=self.gamestate['configstrings']
+        fieldname=str(i)
+        output=string
+        if CS_STRING_MAP.get(i, None):
+            dest=self.gamestate['config']
+            fieldname=CS_STRING_MAP.get(i)
+        if string.startswith("\\"):
+            output={}
+            subfields = string.split('\\')
+            if not fieldname in dest:
+                dest[fieldname]={}
+            for x in range(1, len(subfields)-1, 2):
+                output[subfields[x]]=subfields[x+1]
+        if i >= CS_PLAYERS and i < CS_PLAYERS+MAX_CLIENTS:
+            dest=self.gamestate['config']
+            fieldname='player'+str(i-CS_PLAYERS)
+            subfields = string.split('\\')
+            output = {}
+            for x in range(0, len(subfields), 2):
+                output[subfields[x]]=subfields[x+1]
+            output['id']=i-CS_PLAYERS
+            if not is_spectator(output):
+                self.gamestate['players'].append(output)
+            else:
+                self.gamestate['spectators'].append(output)
+        if i >= CS_SOUNDS and i < CS_SOUNDS+MAX_SOUNDS:
+            dest=self.gamestate['config']
+            fieldname='sound'+str(i-CS_SOUNDS)
+        if i >= CS_LOCATIONS and i < CS_LOCATIONS+MAX_LOCATIONS:
+            dest=self.gamestate['config']
+            fieldname='location'+str(i-CS_LOCATIONS)
+        if i >= CS_TEAM and i < CS_TEAM+MAX_TEAMS:
+            dest=self.gamestate['config']
+            fieldname='team'+str(i-CS_TEAM+1)
+            self.gamestate['teams'].append({'id': i-CS_TEAM+1,
+                                            'name': string})
+        dest[fieldname]=output
 
     def parse_baseline(self):
         return {'type': 'baseline'}
@@ -99,6 +121,16 @@ class QLDemo:
         
         cmd = string.split()[0]
         string = ' '.join(string.split()[1:])
+        if cmd == 'chat':
+            player_to=[ x['n'] for x in
+                        self.gamestate['players']+self.gamestate['spectators']
+                        if x['id']==int(string[2:4])][0]
+            player_to=player_to if player_to else 'FIXME'
+            return {'type': 'servercommand',
+                    'seq': seq,
+                    'cmd': cmd,
+                    'to': player_to,
+                    'string': string}
         return {'type': 'servercommand',
                 'seq': seq,
                 'cmd': cmd,
@@ -107,5 +139,7 @@ class QLDemo:
     def parse_playerstate(self):
         return {'type': 'playerstate'}
 
-
+def is_spectator(userinfo_dict):
+    return True if (userinfo_dict['so'] != "0" 
+                    or int(userinfo_dict['t']) > 2) else False
 

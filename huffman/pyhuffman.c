@@ -264,22 +264,22 @@ static PyObject * py_readlong( PyObject *self, PyObject *args )
 
 static PyObject * py_readstring( PyObject *self, PyObject *args )
 {
-#if PY_MAJOR_VERSION >= 3
+  //#if PY_MAJOR_VERSION >= 3
   char* bob = readString( &msg );
   return PyUnicode_DecodeLatin1(bob, strlen(bob), "strict" );
-#else
-  return Py_BuildValue( "y", readString( &msg ));
-#endif
+  //#else
+  //return Py_BuildValue( "y", readString( &msg ));
+  //#endif
 }
 
 static PyObject * py_readbigstring( PyObject *self, PyObject *args )
 {
-#if PY_MAJOR_VERSION >= 3
+  //#if PY_MAJOR_VERSION >= 3
   char* bob = readString( &msg );
   return PyUnicode_DecodeLatin1(bob, strlen(bob), "strict" );
-#else
-  return Py_BuildValue( "y", readBigString( &msg ));
-#endif
+  //#else
+  //return Py_BuildValue( "y", readBigString( &msg ));
+  //#endif
 }
 
 

@@ -32,26 +32,21 @@ def gametype_to_string(i):
     i=int(i)
     return GT_STRING_MAP.get(i, None)
 
-MAX_MODELS = 256
-MAX_SOUNDS = 256
-MAX_CLIENTS = 64
+MAX_MODELS = 242 # Not the same as Q3A
+MAX_SOUNDS = 255 # Not the same as Q3A
+MAX_CLIENTS = 64 
 MAX_LOCATIONS = 64
+MAX_TEAMS = 2 # Made up to filter team names from observed QL demos
 
-# Configstring Definitions
+# Configstring Definitions from Q3A source headers with mods for QL
+CS_SERVERINFO = 0
+CS_SYSTEMINFO = 1
 CS_MUSIC = 2
 CS_MESSAGE = 3               # from the map worldspawn's message field
 CS_MOTD = 4               # g_motd string for server message of the day
 CS_WARMUP = 5               # server time when the match will be restarted
 CS_SCORES1 = 6
 CS_SCORES2 = 7
-CS_VOTE_TIME = 8
-CS_VOTE_STRING = 9
-CS_VOTE_YES = 10
-CS_VOTE_NO = 11
-CS_TEAMVOTE_TIME = 12
-CS_TEAMVOTE_STRING = 14
-CS_TEAMVOTE_YES = 16
-CS_TEAMVOTE_NO = 18
 CS_GAME_VERSION = 20
 CS_LEVEL_START_TIME = 21   # so the timer only shows the current level
 CS_INTERMISSION = 22       # when 1, fraglimit/timelimit has been hit and intermission will start in a second or two
@@ -65,3 +60,36 @@ CS_PLAYERS = (CS_SOUNDS+MAX_SOUNDS)
 CS_LOCATIONS = (CS_PLAYERS+MAX_CLIENTS)
 CS_PARTICLES  = (CS_LOCATIONS+MAX_LOCATIONS)
 CS_MAX = (CS_PARTICLES+MAX_LOCATIONS)
+CS_TEAM = 659
+
+CS_STRING_MAP = {CS_SERVERINFO: 'server_info',
+                 CS_SYSTEMINFO: 'system_info',
+                 CS_MUSIC: 'music',
+                 CS_MESSAGE: 'map_message',
+                 CS_MOTD: 'server_motd',
+                 CS_WARMUP: 'match_restart',
+                 CS_SCORES1: 'scores1',
+                 CS_SCORES2: 'scores2',
+                 CS_GAME_VERSION: 'game_version',
+                 CS_LEVEL_START_TIME: 'level_start_time',
+                 CS_INTERMISSION: 'intermission',
+                 CS_FLAGSTATUS: 'ctf_flag_status',
+                 CS_SHADERSTATE: 'shader_state',
+                 CS_BOTINFO: 'bot_info',
+                 CS_ITEMS: 'items_present',
+                 CS_MODELS: 'models',
+                 CS_SOUNDS: 'sounds',
+                 CS_PLAYERS: 'players',
+                 CS_LOCATIONS: 'locations',
+                 CS_PARTICLES: 'particles'}
+
+userinfo_map={'c1': 'color1',
+              'c2': 'color2',
+              'tt': 'team_target',
+              'hc': 'handicap',
+              'c': 'country',
+              'cn': 'clan',
+              'so': 'spectator_only',
+              't': 'team',
+              'xcn': 'extended_clan',
+              'tl': 'team_leader'}
