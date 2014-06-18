@@ -12,19 +12,8 @@ import struct
 # C-Extension wrapping Q3A Huffman Routines
 import huffman
 
-# Constants
-nick_clan_filter = re.compile('\^[0-7]|\u0019')
-
-## Message Types
-SVC_BAD=0
-SVC_NOP=1
-SVC_GAMESTATE=2
-SVC_CONFIGSTRING=3
-SVC_BASELINE=4
-SVC_SERVERCOMMAND=5
-SVC_DOWNLOAD=6
-SVC_SNAPSHOT=7
-SVC_EOF=8
+# Constants and enum maps
+from qldemo.constants import *
 
 # Classes
 
@@ -43,16 +32,13 @@ class ServerCommand:
     def __init__(self, seq, string):
         self.seq = seq
         self.cmd = string.split()[0]
-        if self.cmd == 'chat':
-            self.string = filter_qstring(' '.join(string.split()[1:])[4:])
-        else:
-            self.string = ' '.join(string.split()[1:])
+        self.string = ' '.join(string.split()[1:])
 
  
 class QLDemo:
     def __init__(self, filename):
         self.gamestate = Gamestate()
-        self.decoded_packets = []
+        self.players = []
         huffman.init()
         huffman.open(filename)
 
@@ -94,6 +80,12 @@ class QLDemo:
             fields = string.split('\\')
             for x in range(1, len(fields)-1, 2):
                 self.gamestate.config[fields[x]]=fields[x+1]
+        elif string.startswith('n\\'):
+            fields = string.split('\\')
+            player = {}
+            for x in range(0, len(fields), 2):
+                player[fields[x]]=fields[x+1]
+            self.players.append(player)
         else:
             self.gamestate.config[str(i)]=string
         self.gamestate.configstring[i]=string
@@ -106,10 +98,7 @@ class QLDemo:
         string = huffman.readstring()
         
         cmd = string.split()[0]
-        if cmd == 'chat':
-            string = filter_qstring(' '.join(string.split()[1:])[4:])
-        else:
-            string = ' '.join(string.split()[1:])
+        string = ' '.join(string.split()[1:])
         return {'type': 'servercommand',
                 'seq': seq,
                 'cmd': cmd,
@@ -118,8 +107,5 @@ class QLDemo:
     def parse_playerstate(self):
         return {'type': 'playerstate'}
 
-def filter_qstring(string):
-    ## Takes out formatting characters in chats, playernames, &c
-    return nick_clan_filter.sub('', string)
 
 
