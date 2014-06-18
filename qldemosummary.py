@@ -3,20 +3,48 @@
 ## qldemo2json.py
 ## Shawn Nock, 2014
 
-import os
-import json
 import argparse
-import sys
 import datetime
-from qldemo import QLDemo, gametype_to_string
-from qldemo.constants import userinfo_map
+import json
+import re
+import os
+import sys
 
-playerinfo_override = {'n': 'name',
-                       'cn': 'clan',
-                       'xcn': 'xclan',
-                       'w': 'wins',
+from qldemo import QLDemo, gametype_to_string
+from qldemo.constants import userinfo_map, GT_TEAM
+
+## Configuration ##
+playerinfo_override = {'n': 'name',    ## The userInfo_t summary in
+                       'cn': 'clan',   ## CS_PLAYER[MAX_PLAYERS] has short
+                       'xcn': 'xclan', ## hard to decipher names. Any map
+                       'w': 'wins',    ## here will override the name 
                        'l': 'losses',
                        't': 'team'}
+
+### How should we extract and format a timestamp from the filename
+timestamp_re = re.compile('([0-9]{4})_([0-9]{2})_([0-9]{2})-([0-9]{2})_([0-9]{2})_([0-9]{2})')
+def timestamp(filename):
+    hit = timestamp_re.search(filename)
+    if not hit:
+        return None
+    return datetime.datetime.strptime(
+        hit.group(0), 
+        "%Y_%m_%d-%H_%M_%S").ctime()
+
+### How should we extract/format a POV playername from a filename
+pov_res = [re.compile('-([a-zA-Z0-9]*)\(POV\)-'),
+           re.compile('-([a-zA-Z0-9]*)-')]
+color_tag_re = re.compile('\^[0-9]')
+def pov(d, filename):
+    for regex in pov_res:
+        hit = regex.search(filename)
+        if not hit:
+            continue
+        for i in range(1,regex.groups+1):
+            for player in d.gamestate['players']:
+                if hit.group(i).find(color_tag_re.sub('', player['name'])) > -1:
+                    return player['name']
+    return None
 
 def main():
     parser = argparse.ArgumentParser(
@@ -26,34 +54,38 @@ def main():
     args = parser.parse_args()
 
     d = QLDemo(args.file)
-    list(d) # Initiate parse of all packets
-    
-    output = {}
-    output['filename'] = args.file
-    output['gametype'] = gametype_to_string(
-        d.gamestate['config']['server_info']['g_gametype'])
-    for player in d.gamestate['players']:
+    gamestate=None
+    for packet in d:
+        if packet['type'] == 'gamestate':
+            gamestate=packet
+            break
+    if not gamestate:
+        return 1
+    ## Munge playerInfo to conform to ColonelPanic's Needs
+    for player in gamestate['players']:
         for key, value in player.iteritems():
             new_name=dict(userinfo_map.items()+playerinfo_override.items()).get(key, None)
             if new_name:
                 player[new_name]=player[key]
                 del(player[key])
         player['score']=""
-        player['team']=[team['name'] for team in d.gamestate['teams'] if team['id']==int(player['team'])][0]
-    output['players']=d.gamestate['players']
-    output['num_players']=len(d.gamestate['players'])
-    output['size']=os.stat(args.file).st_size
-    output['teams']=d.gamestate['teams']
-    for team in output['teams']:
-        team['score']=""
-    output['by']=""
-    filename_fields = args.file.split('-')
-    ts_string='-'.join(filename_fields[-2:])[:-6]
-    #dt=datetime.datetime(0,0,0)
-    dt = datetime.datetime.strptime(ts_string, "%Y_%m_%d-%H_%M_%S")
-    output['timestamp']=dt.ctime()
-    output['duration']=""
-    output['victor']=""
+        if int(gamestate['config']['server_info']['g_gametype']) >= GT_TEAM:
+            player['team']=[team['name'] for team in d.gamestate['teams'] if team['id']==int(player['team'])][0]
+    
+    output = {'filename': args.file,
+              'gametype': gametype_to_string(
+                  gamestate['config']['server_info']['g_gametype']),
+              'players': gamestate['players'],
+              'size': os.stat(args.file).st_size,
+              'by': pov(d, args.file),
+              'timestamp': timestamp(args.file),
+              'duration': None,
+              'victor': None}
+    
+    if int(gamestate['config']['server_info']['g_gametype']) >= GT_TEAM:
+        output['teams']=d.gamestate['teams']
+        for team in output['teams']:
+            team['score']=""
     
     json.dump(output, 
               sys.stdout, 

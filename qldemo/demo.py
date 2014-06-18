@@ -32,11 +32,13 @@ class ServerCommand:
 
  
 class QLDemo:
-    gamestate={'configstrings': {},
-               'config': {},
-               'players': [],
-               'spectators': [],
-               'teams': []}
+    gamestate={
+        'type': 'gamestate',
+        'configstrings': {},
+        'config': {},
+        'players': [],
+        'spectators': [],
+        'teams': []}
     def __init__(self, filename):
         huffman.init()
         huffman.open(filename)
