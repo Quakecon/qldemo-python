@@ -9,6 +9,7 @@ import json
 import re
 import os
 import sys
+import time
 
 from qldemo import QLDemo, gametype_to_string
 from qldemo.constants import userinfo_map, GT_TEAM
@@ -26,14 +27,15 @@ timestamp_re = re.compile('([0-9]{4})_([0-9]{2})_([0-9]{2})-([0-9]{2})_([0-9]{2}
 def timestamp(filename):
     hit = timestamp_re.search(filename)
     if not hit:
-        return None
+        return time.ctime(os.path.getctime(filename))
     return datetime.datetime.strptime(
         hit.group(0), 
         "%Y_%m_%d-%H_%M_%S").ctime()
 
 ### How should we extract/format a POV playername from a filename
 pov_res = [re.compile('-([a-zA-Z0-9]*)\(POV\)-'),
-           re.compile('-([a-zA-Z0-9]*)-')]
+           re.compile('-([a-zA-Z0-9]*)-'),
+           re.compile('\[([a-zA-Z0-9]*)\]-')]
 color_tag_re = re.compile('\^[0-9]')
 def pov(d, filename):
     for regex in pov_res:
