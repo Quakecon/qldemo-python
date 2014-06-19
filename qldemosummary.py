@@ -15,6 +15,8 @@ from qldemo import QLDemo, gametype_to_string
 from qldemo.constants import userinfo_map, GT_TEAM
 
 ## Configuration ##
+
+URL_PREFIX='/demos/'
 playerinfo_override = {'n': 'name',    ## The userInfo_t summary in
                        'cn': 'clan',   ## CS_PLAYER[MAX_PLAYERS] has short
                        'xcn': 'xclan', ## hard to decipher names. Any map
@@ -48,6 +50,8 @@ def pov(d, filename):
                     return player['name']
     return None
 
+### END Configuration
+
 def main():
     parser = argparse.ArgumentParser(
         description='Summarize, in JSON a QuakeLive Demo File (dm_73)')
@@ -63,6 +67,7 @@ def main():
             break
     if not gamestate:
         return 1
+
     ## Munge playerInfo to conform to ColonelPanic's Needs
     for player in gamestate['players']:
         for key, value in player.iteritems():
@@ -71,10 +76,12 @@ def main():
                 player[new_name]=player[key]
                 del(player[key])
         player['score']=""
+        # If it's a game where teams make sense, translate the teamId into a team name
         if int(gamestate['config']['server_info']['g_gametype']) >= GT_TEAM:
             player['team']=[team['name'] for team in d.gamestate['teams'] if team['id']==int(player['team'])][0]
     
     output = {'filename': args.file,
+              'url': ''.join([URL_PREFIX, args.file.split(os.sep)[-1]]),
               'gametype': gametype_to_string(
                   gamestate['config']['server_info']['g_gametype']),
               'players': gamestate['players'],
@@ -84,6 +91,7 @@ def main():
               'duration': None,
               'victor': None}
     
+    ## Add team list, if it's a team type of game
     if int(gamestate['config']['server_info']['g_gametype']) >= GT_TEAM:
         output['teams']=d.gamestate['teams']
         for team in output['teams']:

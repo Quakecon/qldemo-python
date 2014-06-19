@@ -1,3 +1,6 @@
+GENTITYNUM_BITS= 10
+MAX_GENTITIES= 1 << GENTITYNUM_BITS
+
 ## Message Types
 SVC_BAD=0
 SVC_NOP=1
@@ -8,6 +11,73 @@ SVC_SERVERCOMMAND=5
 SVC_DOWNLOAD=6
 SVC_SNAPSHOT=7
 SVC_EOF=8
+
+## Trajectory Types
+TR_STATIONARY=0
+TR_INTERPOLATE=1
+TR_LINEAR=2
+TR_LINEAR_STOP=3
+TR_SINE=4,
+TR_GRAVITY=5
+
+## Entity Types
+ET_GENERAL=0
+ET_PLAYER=1
+ET_ITEM=2
+ET_MISSILE=3
+ET_MOVER=4
+ET_BEAM=5
+ET_PORTAL=6
+ET_SPEAKER=7
+ET_PUSH_TRIGGER=8
+ET_TELEPORT_TRIGGER=9
+ET_INVISIBLE=10
+ET_GRAPPLE=11             # grapple hooked on wall
+ET_TEAM=12
+ET_EVENTS=13
+
+## Means of Death
+MOD_UNKNOWN=0
+MOD_SHOTGUN=1
+MOD_GAUNTLET=2
+MOD_MACHINEGUN=3
+MOD_GRENADE=4
+MOD_GRENADE_SPLASH=5
+MOD_ROCKET=6
+MOD_ROCKET_SPLASH=7
+MOD_PLASMA=8
+MOD_PLASMA_SPLASH=9
+MOD_RAILGUN=10
+MOD_LIGHTNING=11
+MOD_BFG=12
+MOD_BFG_SPLASH=13
+MOD_WATER=14
+MOD_SLIME=15
+MOD_LAVA=16
+MOD_CRUSH=17
+MOD_TELEFRAG=18
+MOD_FALLING=19
+MOD_SUICIDE=20
+MOD_TARGET_LASER=21
+MOD_TRIGGER_HURT=22
+MOD_GRAPPLE=23
+
+## Team Task
+TEAMTASK_NONE=0
+TEAMTASK_OFFENSE=1
+TEAMTASK_DEFENSE=2
+TEAMTASK_PATROL=3
+TEAMTASK_FOLLOW=4
+TEAMTASK_RETRIEVE=5
+TEAMTASK_ESCORT=6
+TEAMTASK_CAMP=7
+
+## Team
+TEAM_FREE=0
+TEAM_RED=1
+TEAM_BLUE=2
+TEAM_SPECTATOR=3
+TEAM_NUM_TEAMS=4
 
 ## Gametypes
 GT_FFA=0                         # free for all
@@ -47,13 +117,14 @@ CS_MOTD = 4               # g_motd string for server message of the day
 CS_WARMUP = 5               # server time when the match will be restarted
 CS_SCORES1 = 6
 CS_SCORES2 = 7
+CS_WARMUP_END = 13
 CS_GAME_VERSION = 20
 CS_LEVEL_START_TIME = 21   # so the timer only shows the current level
 CS_INTERMISSION = 22       # when 1, fraglimit/timelimit has been hit and intermission will start in a second or two
 CS_FLAGSTATUS = 23         # string indicating flag status in CTF
 CS_SHADERSTATE = 24
 CS_BOTINFO = 25
-CS_ITEMS = 27              # string of 0's and 1's that tell which items are present
+CS_ITEMS = 15              # string of 0's and 1's that tell which items are present
 CS_MODELS = 32
 CS_SOUNDS = (CS_MODELS+MAX_MODELS)
 CS_PLAYERS = (CS_SOUNDS+MAX_SOUNDS)
@@ -61,6 +132,7 @@ CS_LOCATIONS = (CS_PLAYERS+MAX_CLIENTS)
 CS_PARTICLES  = (CS_LOCATIONS+MAX_LOCATIONS)
 CS_MAX = (CS_PARTICLES+MAX_LOCATIONS)
 CS_TEAM = 659
+CS_MAPCREATOR = 679
 
 CS_STRING_MAP = {CS_SERVERINFO: 'server_info',
                  CS_SYSTEMINFO: 'system_info',
@@ -81,7 +153,11 @@ CS_STRING_MAP = {CS_SERVERINFO: 'server_info',
                  CS_SOUNDS: 'sounds',
                  CS_PLAYERS: 'players',
                  CS_LOCATIONS: 'locations',
-                 CS_PARTICLES: 'particles'}
+                 CS_PARTICLES: 'particles',
+                 CS_MAPCREATOR: 'map_creator',
+                 CS_WARMUP_END: 'warmup_end',
+                 
+}
 
 userinfo_map={'c1': 'color1',
               'c2': 'color2',

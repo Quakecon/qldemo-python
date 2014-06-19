@@ -4,6 +4,7 @@
 ## Shawn Nock, 2014
 
 # Standard Lib
+import copy
 import json
 import os
 import re
@@ -15,10 +16,9 @@ import huffman
 # Constants and enum maps
 from qldemo.constants import *
 
-# Classes
+# Configuration
 
-class PlayerState:
-    pass
+# Classes
 
 class ServerCommand:
     seq = None
@@ -30,6 +30,13 @@ class ServerCommand:
         self.cmd = string.split()[0]
         self.string = ' '.join(string.split()[1:])
 
+class PlayerState:
+    def __init__(self):
+        pass
+
+class EntityState:
+    pass
+
  
 class QLDemo:
     gamestate={
@@ -38,7 +45,10 @@ class QLDemo:
         'config': {},
         'players': [],
         'spectators': [],
-        'teams': []}
+        'teams': [],
+        'baselines': [],
+    }
+
     def __init__(self, filename):
         huffman.init()
         huffman.open(filename)
@@ -69,8 +79,11 @@ class QLDemo:
                 break
             elif cmd == SVC_CONFIGSTRING: 
                 self.parse_configstring()
-            elif cmd == SVC_BASELINE: 
+            elif cmd == SVC_BASELINE:
+                continue
                 self.parse_baseline()
+        self.gamestate['clientNum'] = huffman.readlong()
+        self.gamestate['checksumFeed'] = huffman.readlong()
         return self.gamestate
 
     def parse_configstring(self): 
@@ -91,23 +104,26 @@ class QLDemo:
                 output[subfields[x]]=subfields[x+1]
         if i >= CS_PLAYERS and i < CS_PLAYERS+MAX_CLIENTS:
             dest=self.gamestate['config']
-            fieldname='player'+str(i-CS_PLAYERS)
+            fieldname='player{:02d}'.format(i-CS_PLAYERS)
             subfields = string.split('\\')
             output = {}
             for x in range(0, len(subfields), 2):
                 output[subfields[x]]=subfields[x+1]
             output['id']=i-CS_PLAYERS
-            if not is_spectator(output):
-                self.gamestate['players'].append(output)
-            else:
+            if output['t'] == TEAM_SPECTATOR:
                 self.gamestate['spectators'].append(output)
+            else:
+                self.gamestate['players'].append(output)
         if i >= CS_SOUNDS and i < CS_SOUNDS+MAX_SOUNDS:
             dest=self.gamestate['config']
             fieldname='sound'+str(i-CS_SOUNDS)
         if i >= CS_LOCATIONS and i < CS_LOCATIONS+MAX_LOCATIONS:
             dest=self.gamestate['config']
             fieldname='location'+str(i-CS_LOCATIONS)
-        if i >= CS_TEAM and i < CS_TEAM+MAX_TEAMS:
+        if 'system_info' in self.gamestate['config'] \
+           and self.gamestate['config']['system_info'].get('g_gametype', None) \
+           and self.gamestate['config']['system_info']['g_gametype'] >= GT_TEAM \
+           and i >= CS_TEAM and i < CS_TEAM+MAX_TEAMS:
             dest=self.gamestate['config']
             fieldname='team'+str(i-CS_TEAM+1)
             self.gamestate['teams'].append({'id': i-CS_TEAM+1,
@@ -115,7 +131,31 @@ class QLDemo:
         dest[fieldname]=output
 
     def parse_baseline(self):
-        return {'type': 'baseline'}
+        newnum = huffman.readbits(GENTITYNUM_BITS)
+        baseline = EntityState()
+        null_state = EntityState()
+        self.gamestate['baselines'].append(baseline)
+        r = self.read_delta_entity(null_state, baseline, newnum)
+        if r is False:
+            # Make a copy, there are no changes
+            old=self.gamestate['baselines'].pop()
+            new=copy.copy(old)
+            new.number=newnum
+            self.gamestate['baselines'].append(old)
+            self.gamestate['baselines'].append(new)
+
+    def read_delta_entity(self, frm, to, num):
+        ## Check for server order to remove a baseline
+        if huffman.readbits(1):
+            # Don't know how we should handle this, it does mean no
+            # new data; skipping for now
+            return None
+        ## Check for 'no delta' flag
+        if not huffman.readbits(1):
+            ## No changes, we should make 'from' a copy of
+            ## 'to'... this is easier to do from the calling
+            ## method. Signaling up the chain
+            return False
 
     def parse_servercommand(self):
         seq = huffman.readlong()
@@ -141,7 +181,5 @@ class QLDemo:
     def parse_playerstate(self):
         return {'type': 'playerstate'}
 
-def is_spectator(userinfo_dict):
-    return True if (userinfo_dict['so'] != "0" 
-                    or int(userinfo_dict['t']) > 2) else False
+
 
