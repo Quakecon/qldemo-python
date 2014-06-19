@@ -12,7 +12,8 @@ import sys
 import time
 
 from qldemo import QLDemo, gametype_to_string
-from qldemo.constants import userinfo_map, GT_TEAM
+from qldemo.data import GameState
+from qldemo.constants import userinfo_map, GT_TEAM, TEAM_STRING_MAP
 
 ## Configuration ##
 
@@ -34,22 +35,6 @@ def timestamp(filename):
         hit.group(0), 
         "%Y_%m_%d-%H_%M_%S").ctime()
 
-### How should we extract/format a POV playername from a filename
-pov_res = [re.compile('-([a-zA-Z0-9]*)\(POV\)-'),
-           re.compile('-([a-zA-Z0-9]*)-'),
-           re.compile('\[([a-zA-Z0-9]*)\]-')]
-color_tag_re = re.compile('\^[0-9]')
-def pov(d, filename):
-    for regex in pov_res:
-        hit = regex.search(filename)
-        if not hit:
-            continue
-        for i in range(1,regex.groups+1):
-            for player in d.gamestate['players']:
-                if hit.group(i).find(color_tag_re.sub('', player['name'])) > -1:
-                    return player['name']
-    return None
-
 ### END Configuration
 
 def main():
@@ -60,42 +45,39 @@ def main():
     args = parser.parse_args()
 
     d = QLDemo(args.file)
-    gamestate=None
-    for packet in d:
-        if packet['type'] == 'gamestate':
-            gamestate=packet
-            break
-    if not gamestate:
-        return 1
+    list(d) # parse all packets
 
     ## Munge playerInfo to conform to ColonelPanic's Needs
-    for player in gamestate['players']:
+    players=[]
+    for clientNum, player in d.gamestate.players.iteritems():
         for key, value in player.iteritems():
             new_name=dict(userinfo_map.items()+playerinfo_override.items()).get(key, None)
             if new_name:
                 player[new_name]=player[key]
                 del(player[key])
-        player['score']=""
+        player['score']=None
         # If it's a game where teams make sense, translate the teamId into a team name
-        if int(gamestate['config']['server_info']['g_gametype']) >= GT_TEAM:
-            player['team']=[team['name'] for team in d.gamestate['teams'] if team['id']==int(player['team'])][0]
+        if int(d.gamestate.config['server_info']['g_gametype']) >= GT_TEAM:
+            player['team']=TEAM_STRING_MAP[player['team']]
+        players.append(player)
     
     output = {'filename': args.file,
               'url': ''.join([URL_PREFIX, args.file.split(os.sep)[-1]]),
               'gametype': gametype_to_string(
-                  gamestate['config']['server_info']['g_gametype']),
-              'players': gamestate['players'],
+                  d.gamestate.config['server_info']['g_gametype']),
+              'players': d.gamestate.players,
               'size': os.stat(args.file).st_size,
-              'by': pov(d, args.file),
+              'pov': d.gamestate.players[d.gamestate.clientNum]['name'],
               'timestamp': timestamp(args.file),
               'duration': None,
               'victor': None}
     
     ## Add team list, if it's a team type of game
-    if int(gamestate['config']['server_info']['g_gametype']) >= GT_TEAM:
-        output['teams']=d.gamestate['teams']
+    if int(d.gamestate.config['server_info']['g_gametype']) >= GT_TEAM:
+        output['teams']=[{'name': 'TEAM_RED'},
+                         {'name': 'TEAM_BLUE'}]
         for team in output['teams']:
-            team['score']=""
+            team['score']=None
     
     json.dump(output, 
               sys.stdout, 

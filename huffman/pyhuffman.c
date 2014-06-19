@@ -20,6 +20,7 @@ PyDoc_STRVAR( readshort__doc__, "readshort()" );
 PyDoc_STRVAR( readlong__doc__, "readlong()" );
 PyDoc_STRVAR( readstring__doc__, "readstring()" );
 PyDoc_STRVAR( readbigstring__doc__, "readbigstring()" );
+PyDoc_STRVAR( readfloat__doc__, "readfloat()" );
 
 static huffman_t msgHuff;
 static msg_t msg;
@@ -129,6 +130,22 @@ static char* readString( msg_t* msg ) {
     stringBuf[ l ] = 0;
 
     return stringBuf;
+}
+
+static char* readFloat( msg_t* msg ) {
+  int l;
+  int c;
+  
+  for (l=0; l<4; l++) {    
+    c = readByte( msg );        /* use ReadByte so -1 is out of bounds */
+    stringBuf[ l ] = c;
+  }
+  return stringBuf;
+}
+
+static PyObject * py_readfloat( PyObject *self, PyObject *args ) {
+  char* raw_float = readFloat(&msg);
+  return PyFloat_FromDouble(_PyFloat_Unpack4(raw_float, 1));
 }
 
 static char* readBigString( msg_t* msg ) {
@@ -302,6 +319,7 @@ static PyMethodDef huffman_methods[] = {
   { "readlong",  py_readlong, METH_VARARGS, readlong__doc__ },
   { "readstring",  py_readstring, METH_VARARGS, readstring__doc__ },
   { "readbigstring",  py_readbigstring, METH_VARARGS, readbigstring__doc__ },
+  { "readfloat",  py_readfloat, METH_VARARGS, readfloat__doc__ },
 
   { "tell",  py_tell, METH_VARARGS, tell__doc__ },
   { NULL, NULL }

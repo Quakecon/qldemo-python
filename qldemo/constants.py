@@ -1,5 +1,6 @@
-GENTITYNUM_BITS= 10
-MAX_GENTITIES= 1 << GENTITYNUM_BITS
+GENTITYNUM_BITS = 10
+MAX_GENTITIES = 1 << GENTITYNUM_BITS
+FLOAT_INT_BITS = 13
 
 ## Message Types
 SVC_BAD=0
@@ -73,11 +74,18 @@ TEAMTASK_ESCORT=6
 TEAMTASK_CAMP=7
 
 ## Team
-TEAM_FREE=0
-TEAM_RED=1
-TEAM_BLUE=2
-TEAM_SPECTATOR=3
-TEAM_NUM_TEAMS=4
+TEAM_FREE='0'
+TEAM_RED='1'
+TEAM_BLUE='2'
+TEAM_SPECTATOR='3'
+TEAM_NUM_TEAMS='4'
+
+TEAM_STRING_MAP={
+    '0': None,
+    '1': 'Red',
+    '2': 'Blue',
+    '3': 'Spectator'
+}
 
 ## Gametypes
 GT_FFA=0                         # free for all
@@ -169,3 +177,4 @@ userinfo_map={'c1': 'color1',
               't': 'team',
               'xcn': 'extended_clan',
               'tl': 'team_leader'}
+
