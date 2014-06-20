@@ -39,8 +39,8 @@ def main():
 
     ## Munge playerInfo to conform to ColonelPanic's Needs
     players=[]
-    for clientNum, player in d.gamestate.players.iteritems():
-        for key, value in player.iteritems():
+    for clientNum, player in d.gamestate.players.items():
+        for key, value in player.items():
             new_name=dict(userinfo_map.items()+playerinfo_override.items()).get(key, None)
             if new_name:
                 player[new_name]=player[key]
