@@ -1,6 +1,7 @@
 GENTITYNUM_BITS = 10
 MAX_GENTITIES = 1 << GENTITYNUM_BITS
 FLOAT_INT_BITS = 13
+FLOAT_INT_BIAS = (1<<(FLOAT_INT_BITS-1))
 
 ## Message Types
 SVC_BAD=0
@@ -114,7 +115,12 @@ MAX_MODELS = 242 # Not the same as Q3A
 MAX_SOUNDS = 255 # Not the same as Q3A
 MAX_CLIENTS = 64 
 MAX_LOCATIONS = 64
-MAX_TEAMS = 2 # Made up to filter team names from observed QL demos
+MAX_PS_EVENTS = 2
+MAX_STATS = 16
+MAX_PERSISTANT = 16
+MAX_POWERUPS = 16
+MAX_WEAPONS = 16
+MAX_MAP_AREA_BYTES = 32
 
 # Configstring Definitions from Q3A source headers with mods for QL
 CS_SERVERINFO = 0

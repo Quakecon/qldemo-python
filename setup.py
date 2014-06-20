@@ -6,7 +6,7 @@ m = Extension('huffman',
               sources = ['huffman/huffman.c','huffman/pyhuffman.c'])
 
 setup (name = 'ql-demo',
-       version = '0.3.6',
+       version = '0.3.7',
        ext_modules = [m],
        packages = find_packages(),
        scripts = ['qldemo2json.py','ez_setup.py','qldemosummary.py'],

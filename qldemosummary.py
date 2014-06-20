@@ -25,16 +25,6 @@ playerinfo_override = {'n': 'name',    ## The userInfo_t summary in
                        'l': 'losses',
                        't': 'team'}
 
-### How should we extract and format a timestamp from the filename
-timestamp_re = re.compile('([0-9]{4})_([0-9]{2})_([0-9]{2})-([0-9]{2})_([0-9]{2})_([0-9]{2})')
-def timestamp(filename):
-    hit = timestamp_re.search(filename)
-    if not hit:
-        return time.ctime(os.path.getctime(filename))
-    return datetime.datetime.strptime(
-        hit.group(0), 
-        "%Y_%m_%d-%H_%M_%S").ctime()
-
 ### END Configuration
 
 def main():
@@ -45,7 +35,7 @@ def main():
     args = parser.parse_args()
 
     d = QLDemo(args.file)
-    list(d) # parse all packets
+    list(d)
 
     ## Munge playerInfo to conform to ColonelPanic's Needs
     players=[]
@@ -68,7 +58,7 @@ def main():
               'players': d.gamestate.players,
               'size': os.stat(args.file).st_size,
               'pov': d.gamestate.players[d.gamestate.clientNum]['name'],
-              'timestamp': timestamp(args.file),
+              'timestamp': time.ctime(float(d.gamestate.config['server_info']['g_levelStartTime'])),
               'duration': None,
               'victor': None}
     

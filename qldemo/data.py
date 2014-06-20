@@ -24,6 +24,10 @@ class FlattenableObject:
             out[key]=value
         return out
 
+#class Scores(FlattenableObject):
+#    def __init__(self, score_string):
+#        
+
 class GameState(FlattenableObject):
     def __init__(self):
         self.configstrings = {}
@@ -152,6 +156,7 @@ class PlayerStateNETF():
     self.bits.append( 0 )
     self.bits.append( 10 )
     self.bits.append( 16 )
+
 
     assert len( self.bits ) == len( self.fields )
 

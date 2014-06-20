@@ -18,7 +18,7 @@ import struct
 from qldemo.constants import *
 from qldemo.data import (GameState, EntityState, PlayerState, 
                          EntityStateNETF, PlayerStateNETF,
-                         ServerCommand)
+                         ServerCommand, Snapshot)
 
 # Configuration
 
@@ -29,6 +29,7 @@ from qldemo.data import (GameState, EntityState, PlayerState,
 class QLDemo:
     gamestate=GameState()
     packets=[]
+    snapshots=[]
 
     def __init__(self, filename):
         huffman.init()
@@ -48,8 +49,9 @@ class QLDemo:
             elif cmd == SVC_SERVERCOMMAND: 
                 r = self.parse_servercommand()
             elif cmd == SVC_SNAPSHOT:
-                continue
-                r = self.parse_playerstate()
+                continue # Don't need actual game rendering bits, yet
+                r = self.parse_snapshot()
+                self.snapshots.append(r)
             self.packets.append(r)
             yield r
 
@@ -85,22 +87,21 @@ class QLDemo:
                 output[subfields[x]]=subfields[x+1]
         if i >= CS_PLAYERS and i < CS_PLAYERS+MAX_CLIENTS:
             clientNum = i-CS_PLAYERS
-            dest=self.gamestate.config
-            fieldname='player{:02d}'.format(clientNum)
+            fieldname=clientNum
             subfields = string.split('\\')
             output = {}
             for x in range(0, len(subfields), 2):
                 output[subfields[x]]=subfields[x+1]
             if output['t'] == TEAM_SPECTATOR:
-                self.gamestate.spectators[clientNum]=output
+                dest=self.gamestate.spectators
             else:
-                self.gamestate.players[clientNum]=output
+                dest=self.gamestate.players
         if i >= CS_SOUNDS and i < CS_SOUNDS+MAX_SOUNDS:
             dest=self.gamestate.config
             fieldname='sound'+str(i-CS_SOUNDS)
         if i >= CS_LOCATIONS and i < CS_LOCATIONS+MAX_LOCATIONS:
             dest=self.gamestate.config
-            fieldname='location'+str(i-CS_LOCATIONS)
+            fieldname='location{:02d}'.format(i-CS_LOCATIONS)
         dest[fieldname]=output
 
     def parse_baseline(self):
@@ -145,10 +146,69 @@ class QLDemo:
         seq = huffman.readlong()
         string = huffman.readstring()
         
-        return ServerCommand(seq, string)
+        sc=ServerCommand(seq, string)
+        #if sc.cmd.startswith('scores'):
+        return sc
+
+    def parse_snapshot(self):
+        new_snap = Snapshot()
+        new_snap.serverTime=huffman.readlong()
+        delta_num = huffman.readbyte()
+        new_snap.snapFlags = huffman.readbyte()
+        new_snap.areamaskLen = huffman.readbyte()
+        for i in range(new_snap.areamaskLen):
+            new_snap.areamask[i] = huffman.readbyte()
+        ps = self.parse_playerstate()
+        new_snap.playerstate=ps
+        return new_snap
 
     def parse_playerstate(self):
-        pass
+        last_field=huffman.readbyte()
+        player=PlayerState()
+        netf=PlayerStateNETF(player)
 
+        playerStateFieldsNum  = len( netf.bits )
 
+        if last_field > playerStateFieldsNum :
+            print "max allowed field num is %d" % playerStateFieldsNum
+            return None
+
+        for i in range( 0, last_field) :
+            if huffman.readbits( 1 ) :
+                if netf.bits[ i ] == 0 :
+                    if huffman.readbits( 1 ) == 0 :
+                        netf.fields[ i ] = huffman.readbits( FLOAT_INT_BITS ) - FLOAT_INT_BIAS
+                    else :
+                        netf.fields[ i ] = huffman.readfloat()
+                else :
+                    bits = netf.bits[ i ]
+                    netf.fields[ i ] = huffman.readbits( bits )
+        netf.update()
+
+        if huffman.readbits( 1 ) :
+            if huffman.readbits( 1 ) :
+                c = huffman.readshort()
+                for i in range( MAX_STATS ) :
+                    if c & ( 1 << i ) :
+                        player.stats[ i ] = huffman.readshort()
+
+            if huffman.readbits( 1 ) :
+                c = huffman.readshort()
+                for i in range( MAX_PERSISTANT ) :
+                    if c & ( 1 << i ) :
+                        player.persistant[ i ] = huffman.readshort()
+
+            if huffman.readbits( 1 ) :
+                c = huffman.readshort()
+                for i in range( MAX_WEAPONS ) :
+                    if c & ( 1 << i ) :
+                        player.ammo[ i ] = huffman.readshort()
+
+            if huffman.readbits( 1 ) :
+                c = huffman.readshort()
+                for i in range( MAX_POWERUPS ) :
+                    if c & ( 1 << i ) :
+                        player.powerups[ i ] = huffman.readlong()
+
+        return player
 
