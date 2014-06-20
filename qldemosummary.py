@@ -4,15 +4,13 @@
 ## Shawn Nock, 2014
 
 import argparse
-import datetime
 import json
-import re
 import os
 import sys
 import time
 
 from qldemo import QLDemo, gametype_to_string
-from qldemo.data import GameState
+from qldemo.data import GameState, Snapshot
 from qldemo.constants import userinfo_map, GT_TEAM, TEAM_STRING_MAP
 
 ## Configuration ##
@@ -41,7 +39,7 @@ def main():
     players=[]
     for clientNum, player in d.gamestate.players.items():
         for key, value in player.items():
-            new_name=dict(userinfo_map.items()|playerinfo_override.items()).get(key, None)
+            new_name=playerinfo_override.get(key, None)
             if new_name:
                 player[new_name]=player[key]
                 del(player[key])
@@ -50,6 +48,21 @@ def main():
         if int(d.gamestate.config['server_info']['g_gametype']) >= GT_TEAM:
             player['team']=TEAM_STRING_MAP[player['team']]
         players.append(player)
+
+    # Calculate demo duration
+    ## FIXME - I think serverTime is in msec, but it is a guess based
+    ## on a skim of the Q3A source. It'd be nice to verify
+    first_snap=None
+    last_snap=None
+    for i in d.packets:
+        if i.__class__ is Snapshot:
+            first_snap=i
+            break
+    for i in range(-1,-5,-1):
+        if d.packets[i].__class__ is Snapshot:
+            last_snap=d.packets[i]
+            break
+    duration = (last_snap.serverTime - first_snap.serverTime) / 1000
     
     output = {'filename': args.file,
               'url': ''.join([URL_PREFIX, args.file.split(os.sep)[-1]]),
@@ -59,7 +72,7 @@ def main():
               'size': os.stat(args.file).st_size,
               'pov': d.gamestate.players[d.gamestate.clientNum]['name'],
               'timestamp': time.ctime(float(d.gamestate.config['server_info']['g_levelStartTime'])),
-              'duration': None,
+              'duration': duration,
               'victor': None}
     
     ## Add team list, if it's a team type of game

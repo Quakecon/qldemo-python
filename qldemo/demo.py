@@ -49,7 +49,7 @@ class QLDemo:
             elif cmd == SVC_SERVERCOMMAND: 
                 r = self.parse_servercommand()
             elif cmd == SVC_SNAPSHOT:
-                continue # Don't need actual game rendering bits, yet
+                #continue # Don't need actual game rendering bits, yet
                 r = self.parse_snapshot()
                 self.snapshots.append(r)
             self.packets.append(r)
@@ -156,10 +156,10 @@ class QLDemo:
         delta_num = huffman.readbyte()
         new_snap.snapFlags = huffman.readbyte()
         new_snap.areamaskLen = huffman.readbyte()
-        for i in range(new_snap.areamaskLen):
-            new_snap.areamask[i] = huffman.readbyte()
-        ps = self.parse_playerstate()
-        new_snap.playerstate=ps
+        for i in range(new_snap.areamaskLen+1):
+            new_snap.areamask.append(huffman.readbyte())
+        #ps = self.parse_playerstate()
+        #new_snap.playerstate=ps
         return new_snap
 
     def parse_playerstate(self):
