@@ -170,7 +170,6 @@ class QLDemo:
         playerStateFieldsNum  = len( netf.bits )
 
         if last_field > playerStateFieldsNum :
-            print "max allowed field num is %d" % playerStateFieldsNum
             return None
 
         for i in range( 0, last_field) :
