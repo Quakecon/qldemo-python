@@ -50,7 +50,6 @@ class QLDemo:
             elif cmd == SVC_SERVERCOMMAND: 
                 r = self.parse_servercommand()
             elif cmd == SVC_SNAPSHOT:
-                #continue # Don't need actual game rendering bits, yet
                 r = self.parse_snapshot()
                 self.snapshots.append(r)
             self.packets.append(r)
@@ -110,16 +109,17 @@ class QLDemo:
         newnum = huffman.readbits(GENTITYNUM_BITS)
         null_state=EntityState()
         baseline = self.read_delta_entity(null_state, newnum)
-        self.gamestate.baselines[newnum]=baseline
+        ## Broken for now, disabling for speed
+        #self.gamestate.baselines[newnum]=baseline
 
     def read_delta_entity(self, frm, num):
         ## Check for server order to remove a baseline
-        if huffman.readbits(1):
+        if huffman.readbits(1) == 1:
             # Don't know how we should handle this, it does mean no
             # new data; skipping for now
             return
         ## Check for 'no delta' flag
-        if not huffman.readbits(1):
+        if huffman.readbits(1) == 0:
             ## No changes, we should make 'from' a copy of
             ## 'to'... skipping for now
             return
@@ -131,15 +131,14 @@ class QLDemo:
         for i in range(0, last_field):
             if huffman.readbits(1) :
                 if not netf.bits[i] :
-                    if huffman.readbits(1):
-                        if not huffman.readbits(1):
+                    if huffman.readbits(1) != 0:
+                        if huffman.readbits(1) == 0:
                             netf.fields[i] = huffman.readbits(FLOAT_INT_BITS)
                         else :
                             netf.fields[i] = huffman.readfloat()
                 else:
-                    if huffman.readbits(1):
-                        bits = netf.bits[i]
-                        netf.fields[i] = huffman.readbits(bits)
+                    if huffman.readbits(1) != 0:
+                        netf.fields[i] = huffman.readbits(netf.bits[i])
 
         netf.update()
         return entity
@@ -166,8 +165,8 @@ class QLDemo:
         delta_num = huffman.readbyte()
         new_snap.snapFlags = huffman.readbyte()
         new_snap.areamaskLen = huffman.readbyte()
-        for i in range(new_snap.areamaskLen+1):
-            new_snap.areamask.append(huffman.readbyte())
+        #for i in range(new_snap.areamaskLen+1):
+        #    new_snap.areamask.append(huffman.readbyte())
         #ps = self.parse_playerstate()
         #new_snap.playerstate=ps
         return new_snap

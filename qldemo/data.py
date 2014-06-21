@@ -104,7 +104,7 @@ class PlayerState(FlattenableObject):
     self.jumppad_frame = 0
     self.entityEventSequence = 0
 
-class PlayerStateNETF():
+class PlayerStateNETF:
   def __init__( self, player ):
     self.player = player
     self.fields = [ 0 ] * 48
@@ -265,7 +265,7 @@ class EntityState(FlattenableObject):
 
   
 
-class EntityStateNETF():
+class EntityStateNETF:
   def __init__(self,entity):
     self.entity = entity
     self.fields = [ 0 ] * 53

@@ -179,7 +179,6 @@ userinfo_map={'c1': 'color1',
               'hc': 'handicap',
               'c': 'country',
               'cn': 'clan',
-              'so': 'spectator_only',
               't': 'team',
               'xcn': 'extended_clan',
               'tl': 'team_leader'}
