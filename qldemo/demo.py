@@ -151,7 +151,7 @@ class QLDemo:
         if sc.cmd.startswith('scores'):
             score_list=sc.string.split()
             num_scores=int(score_list[0])
-            score_field_num=len(score_list[1:])/num_scores
+            score_field_num=len(score_list[1:])//num_scores
             for i in range(num_scores):
                 clientNum = int(score_list[1:][i*score_field_num])
                 score = int(score_list[1:][i*score_field_num+1])
