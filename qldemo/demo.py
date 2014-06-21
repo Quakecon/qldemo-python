@@ -30,6 +30,7 @@ class QLDemo:
     gamestate=GameState()
     packets=[]
     snapshots=[]
+    scores={}
 
     def __init__(self, filename):
         huffman.init()
@@ -87,7 +88,7 @@ class QLDemo:
                 output[subfields[x]]=subfields[x+1]
         if i >= CS_PLAYERS and i < CS_PLAYERS+MAX_CLIENTS:
             clientNum = i-CS_PLAYERS
-            fieldname=clientNum
+            fieldname=int(clientNum)
             subfields = string.split('\\')
             output = {}
             for x in range(0, len(subfields), 2):
@@ -96,6 +97,7 @@ class QLDemo:
                 dest=self.gamestate.spectators
             else:
                 dest=self.gamestate.players
+            self.gamestate.scores[clientNum]=0
         if i >= CS_SOUNDS and i < CS_SOUNDS+MAX_SOUNDS:
             dest=self.gamestate.config
             fieldname='sound'+str(i-CS_SOUNDS)
@@ -147,7 +149,15 @@ class QLDemo:
         string = huffman.readstring()
         
         sc=ServerCommand(seq, string)
-        #if sc.cmd.startswith('scores'):
+        if sc.cmd.startswith('scores'):
+            score_list=sc.string.split()
+            num_scores=int(score_list[0])
+            score_field_num=len(score_list[1:])/num_scores
+            for i in range(num_scores):
+                clientNum = int(score_list[1:][i*score_field_num])
+                score = int(score_list[1:][i*score_field_num+1])
+                self.gamestate.scores[clientNum]=score
+            
         return sc
 
     def parse_snapshot(self):

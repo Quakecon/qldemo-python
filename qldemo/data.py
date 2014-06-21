@@ -35,6 +35,7 @@ class GameState(FlattenableObject):
         self.players = {}
         self.spectators = {}
         self.baselines = {}
+        self.scores = {}
 
 class Trajectory(FlattenableObject):
   def __init__(self):

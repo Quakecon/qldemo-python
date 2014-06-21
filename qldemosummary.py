@@ -43,7 +43,7 @@ def main():
             if new_name:
                 player[new_name]=player[key]
                 del(player[key])
-        player['score']=None
+        player['score']=d.gamestate.scores[clientNum]
         # If it's a game where teams make sense, translate the teamId into a team name
         if int(d.gamestate.config['server_info']['g_gametype']) >= GT_TEAM:
             player['team']=TEAM_STRING_MAP[player['team']]
@@ -64,14 +64,14 @@ def main():
             break
     duration = (last_snap.serverTime - first_snap.serverTime) / 1000
     
-    output = {'filename': args.file,
-              'url': ''.join([URL_PREFIX, args.file.split(os.sep)[-1]]),
+    output = {'filename': args.file.split(os.sep)[-1],
               'gametype': gametype_to_string(
                   d.gamestate.config['server_info']['g_gametype']),
               'players': d.gamestate.players,
               'size': os.stat(args.file).st_size,
-              'pov': d.gamestate.players[d.gamestate.clientNum]['name'],
+              'pov': d.gamestate.clientNum,
               'timestamp': time.ctime(float(d.gamestate.config['server_info']['g_levelStartTime'])),
+              'mapname': d.gamestate.config['server_info']['mapname'],
               'duration': duration,
               'victor': None}
     
@@ -85,7 +85,8 @@ def main():
     json.dump(output, 
               sys.stdout, 
               ensure_ascii=False,
-              indent=2)
+              indent=2,
+              sort_keys=True)
     return 0
 
 if __name__ == '__main__':
