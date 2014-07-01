@@ -111,8 +111,8 @@ def gametype_to_string(i):
     i=int(i)
     return GT_STRING_MAP.get(i, None)
 
-MAX_MODELS = 242 # Not the same as Q3A
-MAX_SOUNDS = 255 # Not the same as Q3A
+MAX_MODELS = 256 # Not the same as Q3A
+MAX_SOUNDS = 256 # Not the same as Q3A
 MAX_CLIENTS = 64 
 MAX_LOCATIONS = 64
 MAX_PS_EVENTS = 2
@@ -127,50 +127,162 @@ CS_SERVERINFO = 0
 CS_SYSTEMINFO = 1
 CS_MUSIC = 2
 CS_MESSAGE = 3               # from the map worldspawn's message field
-CS_MOTD = 4               # g_motd string for server message of the day
+CS_MOTD = 4              # g_motd string for server message of the day
 CS_WARMUP = 5               # server time when the match will be restarted
 CS_SCORES1 = 6
 CS_SCORES2 = 7
-CS_WARMUP_END = 13
-CS_GAME_VERSION = 20
-CS_LEVEL_START_TIME = 21   # so the timer only shows the current level
-CS_INTERMISSION = 22       # when 1, fraglimit/timelimit has been hit and intermission will start in a second or two
-CS_FLAGSTATUS = 23         # string indicating flag status in CTF
-CS_SHADERSTATE = 24
-CS_BOTINFO = 25
-CS_ITEMS = 15              # string of 0's and 1's that tell which items are present
-CS_MODELS = 32
+CS_VOTE_TIME = 8
+CS_VOTE_STRING = 9
+CS_VOTE_YES = 10
+CS_VOTE_NO = 11
+CS_GAME_VERSION = 12
+CS_LEVEL_START_TIME = 13
+CS_INTERMISSION = 14
+CS_ITEMS = 15
+CS_BOTINFO = 16
+CS_MODELS = 17
+
 CS_SOUNDS = (CS_MODELS+MAX_MODELS)
 CS_PLAYERS = (CS_SOUNDS+MAX_SOUNDS)
 CS_LOCATIONS = (CS_PLAYERS+MAX_CLIENTS)
-CS_PARTICLES  = (CS_LOCATIONS+MAX_LOCATIONS)
-CS_MAX = (CS_PARTICLES+MAX_LOCATIONS)
-CS_TEAM = 659
-CS_MAPCREATOR = 679
+CS_LAST_GENERIC = (CS_LOCATIONS + MAX_LOCATIONS) # Should be 656
 
-CS_STRING_MAP = {CS_SERVERINFO: 'server_info',
-                 CS_SYSTEMINFO: 'system_info',
-                 CS_MUSIC: 'music',
-                 CS_MESSAGE: 'map_message',
-                 CS_MOTD: 'server_motd',
-                 CS_WARMUP: 'match_restart',
-                 CS_SCORES1: 'scores1',
-                 CS_SCORES2: 'scores2',
-                 CS_GAME_VERSION: 'game_version',
-                 CS_LEVEL_START_TIME: 'level_start_time',
-                 CS_INTERMISSION: 'intermission',
-                 CS_FLAGSTATUS: 'ctf_flag_status',
-                 CS_SHADERSTATE: 'shader_state',
-                 CS_BOTINFO: 'bot_info',
-                 CS_ITEMS: 'items_present',
-                 CS_MODELS: 'models',
-                 CS_SOUNDS: 'sounds',
-                 CS_PLAYERS: 'players',
-                 CS_LOCATIONS: 'locations',
-                 CS_PARTICLES: 'particles',
-                 CS_MAPCREATOR: 'map_creator',
-                 CS_WARMUP_END: 'warmup_end',
-                 
+CS_FLAGSTATUS = 658
+CS_SCORES1PLAYER = 659
+CS_SCORES2PLAYER = 660
+CS_ROUND_WARMUP = 661
+CS_ROUND_START_TIME = 662 
+CS_TEAMCOUNT_RED = 663
+CS_TEAMCOUNT_BLUE = 664
+CS_SHADERSTATE = 665
+CS_NEXTMAP = 666
+CS_PRACTICE = 667
+CS_FREECAM = 668
+
+CS_PAUSE_START_TIME = 669   # if this is non-zero, the game is paused
+CS_PAUSE_END_TIME = 670     # 0 = pause, !0 = timeout
+
+CS_TIMEOUTS_RED = 671        # TOs REMAINING
+CS_TIMEOUTS_BLUE = 672
+
+CS_MODEL_OVERRIDE = 673
+    
+CS_PLAYER_CYLINDERS = 674
+CS_DEBUGFLAGS = 675
+CS_ENABLEBREATH = 676
+CS_TEAMLOCATORS = 677
+CS_DMGTHROUGHDEPTH = 678
+CS_AUTHOR = 679             # from the map worldspawn's author field
+CS_AUTHOR2 = 680 
+CS_ADVERT_DELAY = 681
+CS_PMOVEINFO = 682
+CS_ARMORINFO = 683
+CS_WEAPONINFO = 684
+CS_PLAYERINFO = 685
+CS_1STPLAYER = 686
+CS_2NDPLAYER = 687
+CS_SCORE1STPLAYER = 688
+CS_SCORE2NDPLAYER = 689
+CS_ATMOSEFFECT =  690 # unused =  was per-map rain/snow effects
+CS_MOST_DAMAGEDEALT_PLYR = 691 
+CS_MOST_ACCURATE_PLYR = 692
+CS_REDTEAMNAME = 693
+CS_BLUETEAMNAME = 694
+CS_REDTEAMCLANTAG = 695
+CS_BLUETEAMCLANTAG = 696
+CS_BEST_ITEMCONTROL_PLYR = 697 
+CS_SERVER_OWNER = 698
+CS_MOST_VALUABLE_OFFENSIVE_PLYR = 699
+CS_MOST_VALUABLE_DEFENSIVE_PLYR = 700
+CS_MOST_VALUABLE_PLYR = 701
+CS_GENERIC_COUNT_RED = 702
+CS_GENERIC_COUNT_BLUE = 703
+CS_AD_SCORES = 704
+CS_ROUND_WINNER = 705
+CS_CUSTOM_SETTINGS = 706
+CS_ROTATIONMAPS = 707
+CS_ROTATIONVOTES = 708
+CS_DISABLE_VOTE_UI = 709
+CS_ALLREADY_TIME = 710
+CS_ENEMYLOCATORS = 711
+CS_INFECTED_SURVIVOR_MINSPEED = 712
+CS_RACE_POINTS = 713
+CS_MAX = 714
+
+CS_STRING_MAP = {
+    CS_SERVERINFO: "serverinfo",
+    CS_SYSTEMINFO: "systeminfo",
+    CS_MUSIC: "music",
+    CS_MESSAGE: "message",
+    CS_MOTD: "motd",
+    CS_WARMUP: "warmup",               # server time when the match will be restarted
+    CS_SCORES1: "scores1",
+    CS_SCORES2: "scores2",
+    CS_VOTE_TIME: "vote_time",
+    CS_VOTE_STRING: "vote_string",
+    CS_VOTE_YES: "vote_yes",
+    CS_VOTE_NO: "vote_no",
+    CS_GAME_VERSION: "game_version",
+    CS_LEVEL_START_TIME: "level_start_time",
+    CS_INTERMISSION: "intermission",
+    CS_ITEMS: "items",
+    CS_BOTINFO: "botinfo",
+    CS_FLAGSTATUS: "flagstatus",
+    CS_SCORES1PLAYER: "scores1player",
+    CS_SCORES2PLAYER: "scores2player",
+    CS_ROUND_WARMUP: "round_warmup",
+    CS_ROUND_START_TIME: "round_start_time",
+    CS_TEAMCOUNT_RED: "teamcount_red",
+    CS_TEAMCOUNT_BLUE: "teamcount_blue",
+    CS_SHADERSTATE: "shaderstate",
+    CS_NEXTMAP: "nextmap",
+    CS_PRACTICE: "practice",
+    CS_FREECAM: "freecam",
+    CS_PAUSE_START_TIME: "pause_start_time",
+    CS_PAUSE_END_TIME: "pause_end_time",
+    CS_TIMEOUTS_RED: "timeouts_red",
+    CS_TIMEOUTS_BLUE: "timeouts_blue",
+    CS_MODEL_OVERRIDE: "cs_model_override",
+    CS_PLAYER_CYLINDERS: "player_cylinders",
+    CS_DEBUGFLAGS: "debugflags",
+    CS_ENABLEBREATH: "enablebreath",
+    CS_TEAMLOCATORS: "teamlocators",
+    CS_DMGTHROUGHDEPTH: "dmgthroughdepth",
+    CS_AUTHOR: "author",
+    CS_AUTHOR2: "author2",
+    CS_ADVERT_DELAY: "advert_delauy",
+    CS_PMOVEINFO: "pmoveinfo",
+    CS_ARMORINFO: "armorinfo",
+    CS_WEAPONINFO: "weaponinfo",
+    CS_PLAYERINFO: "playerinfo",
+    CS_1STPLAYER: "1stplayer",
+    CS_2NDPLAYER: "2ndplayer",
+    CS_SCORE1STPLAYER: "score1stplayer",
+    CS_SCORE2NDPLAYER: "score2ndplayer",
+    CS_ATMOSEFFECT: "atmoseffect",
+    CS_MOST_DAMAGEDEALT_PLYR: "most_damagedealt_plyr",
+    CS_MOST_ACCURATE_PLYR: "most_accurate_plyr",
+    CS_REDTEAMNAME: "redteamname",
+    CS_BLUETEAMNAME: "blueteamname",
+    CS_REDTEAMCLANTAG: "redteamclantag",
+    CS_BLUETEAMCLANTAG: "blueteamclantag",
+    CS_BEST_ITEMCONTROL_PLYR: "best_itemcontrol_plyr",
+    CS_SERVER_OWNER: "server_owner",
+    CS_MOST_VALUABLE_OFFENSIVE_PLYR: "most_valuable_offensive_plyr",
+    CS_MOST_VALUABLE_DEFENSIVE_PLYR: "most_valuable_deffensive_plyr",
+    CS_MOST_VALUABLE_PLYR: "most_valuable_plyr",
+    CS_GENERIC_COUNT_RED: "generic_count_red",
+    CS_GENERIC_COUNT_BLUE: "generic_count_blue",
+    CS_AD_SCORES: "cs_ad_scores",
+    CS_ROUND_WINNER: "round_winner",
+    CS_CUSTOM_SETTINGS: "cs_custom_settings",
+    CS_ROTATIONMAPS: "rotationmaps",
+    CS_ROTATIONVOTES: "rotationvotes",
+    CS_DISABLE_VOTE_UI: "disable_vote_ui",
+    CS_ALLREADY_TIME: "allready_time",
+    CS_ENEMYLOCATORS: "enemylocators",
+    CS_INFECTED_SURVIVOR_MINSPEED: "infected_survivor_minspeed",
+    CS_RACE_POINTS: "race_points",
 }
 
 userinfo_map={'c1': 'color1',
