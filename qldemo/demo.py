@@ -30,7 +30,7 @@ class QLDemo:
     gamestate=GameState()
     packets=[]
     snapshots=[]
-    scores={}
+    scores=[]
 
     def __init__(self, filename):
         huffman.init()
@@ -148,16 +148,123 @@ class QLDemo:
         string = huffman.readstring()
         
         sc=ServerCommand(seq, string)
-        if sc.cmd.startswith('scores'):
-            score_list=sc.string.split()
-            num_scores=int(score_list[0])
-            score_field_num=len(score_list[1:])//num_scores
-            for i in range(num_scores):
-                clientNum = int(score_list[1:][i*score_field_num])
-                score = int(score_list[1:][i*score_field_num+1])
-                self.gamestate.scores[clientNum]=score
-            
+        if sc.cmd == "scores_duel":
+            sc = self.parse_duel_scores(sc)
+            self.scores.append(sc.scores)
+        elif sc.cmd == "scores_ctf":
+            sc = self.parse_ctf_scores(sc)
+            self.scores.append(sc.scores)
         return sc
+
+    def parse_duel_scores(self, command):
+        offset = 1
+        ls = command.string.split()
+        num_scores = int(ls[0])
+        command.scores={}
+        for client in range(num_scores):
+            client_num = ls[offset+0]
+            command.scores[client_num]={}
+            command.scores[client_num]['score'] = ls[offset+1]
+            command.scores[client_num]['ping'] = ls[offset+2]
+            command.scores[client_num]['time'] = ls[offset+3]
+            command.scores[client_num]['kills'] = ls[offset+4]
+            command.scores[client_num]['deaths'] = ls[offset+5]
+            command.scores[client_num]['accuracy'] = ls[offset+6]
+            command.scores[client_num]['best_weapon'] = ls[offset+7]
+            command.scores[client_num]['damage_dealt'] = ls[offset+8]
+            command.scores[client_num]['impressive'] = ls[offset+9]
+            command.scores[client_num]['excellent'] = ls[offset+10]
+            command.scores[client_num]['gauntlet'] = ls[offset+11]
+            command.scores[client_num]['perfect'] = ls[offset+12]
+            command.scores[client_num]['red_armor_pickups'] = ls[offset+13]
+            command.scores[client_num]['red_armor_pickup_time'] = ls[offset+14]
+            command.scores[client_num]['yellow_armor_pickups'] = ls[offset+15]
+            command.scores[client_num]['yellow_armor_pickup_time'] = ls[offset+16]
+            command.scores[client_num]['green_armor_pickups'] = ls[offset+17]
+            command.scores[client_num]['green_armor_pickup_time'] = ls[offset+18]
+            command.scores[client_num]['mega_health_pickups'] = ls[offset+19]
+            command.scores[client_num]['mega_healh_pickup_time'] = ls[offset+20]
+            offset+=21
+            command.scores[client_num]['weapon_stats'] = []
+            for i in range(WP_GAUNTLET, WP_NUM_WEAPONS-1):
+                weapon = {}
+                weapon['hit'] = ls[offset+0]
+                weapon['fired'] = ls[offset+1]
+                weapon['accuracy'] = ls[offset+2]
+                weapon['damage_dealt'] = ls[offset+3]
+                weapon['kills'] = ls[offset+4]
+                command.scores[client_num]['weapon_stats'].append(weapon)
+                offset+=5
+        return command
+
+    def parse_ctf_scores(self, command):
+        ls=command.string.split()
+        command.scores={}
+        command.scores['TEAM_RED'] = {}
+        command.scores['TEAM_RED']['red_armor']    = ls[0]
+        command.scores['TEAM_RED']['yellow_armor'] = ls[1]
+        command.scores['TEAM_RED']['green_armor']  = ls[2]
+        command.scores['TEAM_RED']['mega_health']  = ls[3]
+        command.scores['TEAM_RED']['quad_damage']  = ls[4]
+        command.scores['TEAM_RED']['battle_suit']  = ls[5]
+        command.scores['TEAM_RED']['regeneration'] = ls[6]
+        command.scores['TEAM_RED']['haste']        = ls[7]
+        command.scores['TEAM_RED']['invisibility'] = ls[8]
+        command.scores['TEAM_RED']['flag']         = ls[9]
+        command.scores['TEAM_RED']['medkit']       = ls[10]
+        command.scores['TEAM_RED']['quad_damage_time']  = ls[11]
+        command.scores['TEAM_RED']['battle_suit_time']  = ls[12]
+        command.scores['TEAM_RED']['regeneration_time']  = ls[13]
+        command.scores['TEAM_RED']['haste_time']  = ls[14]
+        command.scores['TEAM_RED']['invisibility_time']  = ls[15]
+        command.scores['TEAM_RED']['flag_time']  = ls[16]
+        command.scores['TEAM_BLUE'] = {}
+        command.scores['TEAM_BLUE']['red_armor']    = ls[17]
+        command.scores['TEAM_BLUE']['yellow_armor'] = ls[18]
+        command.scores['TEAM_BLUE']['green_armor']  = ls[19]
+        command.scores['TEAM_BLUE']['mega_health']  = ls[20]
+        command.scores['TEAM_BLUE']['quad_damage']  = ls[21]
+        command.scores['TEAM_BLUE']['battle_suit']  = ls[22]
+        command.scores['TEAM_BLUE']['regeneration'] = ls[23]
+        command.scores['TEAM_BLUE']['haste']        = ls[24]
+        command.scores['TEAM_BLUE']['invisibility'] = ls[25]
+        command.scores['TEAM_BLUE']['flag']         = ls[26]
+        command.scores['TEAM_BLUE']['medkit']       = ls[27]
+        command.scores['TEAM_BLUE']['quad_damage_time']  = ls[28]
+        command.scores['TEAM_BLUE']['battle_suit_time']  = ls[29]
+        command.scores['TEAM_BLUE']['regeneration_time']  = ls[30]
+        command.scores['TEAM_BLUE']['haste_time']  = ls[31]
+        command.scores['TEAM_BLUE']['invisibility_time']  = ls[32]
+        command.scores['TEAM_BLUE']['flag_time']  = ls[33]
+
+        num_scores = ls[34]
+        command.scores['TEAM_RED']['score'] = ls[35]
+        command.scores['TEAM_BLUE']['score'] = ls[36]
+        offset = 0
+        for client in range(num_scores):
+            client_num = ls[offset+37]
+            command.scores[client_num]={}
+            command.scores[client_num]['team'] = ls[offset+38]
+            command.scores[client_num]['premium'] = ls[offset+39]
+            command.scores[client_num]['score'] = ls[offset+40]
+            command.scores[client_num]['ping'] = ls[offset+41]
+            command.scores[client_num]['time'] = ls[offset+42]
+            command.scores[client_num]['kills'] = ls[offset+43]
+            command.scores[client_num]['deaths'] = ls[offset+44]
+            command.scores[client_num]['powerups'] = ls[offset+45]
+            command.scores[client_num]['accuracy'] = ls[offset+46]
+            command.scores[client_num]['best_weapon'] = ls[offset+47]
+            command.scores[client_num]['impressive'] = ls[offset+48]
+            command.scores[client_num]['excellent'] = ls[offset+49]
+            command.scores[client_num]['gauntlet'] = ls[offset+50]
+            command.scores[client_num]['defend'] = ls[offset+51]
+            command.scores[client_num]['assist'] = ls[offset+52]
+            command.scores[client_num]['captures'] = ls[offset+53]
+            command.scores[client_num]['perfect'] = ls[offset+54]
+            command.scores[client_num]['alive'] = ls[offset+55]
+            offset+=19
+        return command
+            
 
     def parse_snapshot(self):
         new_snap = Snapshot()
