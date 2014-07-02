@@ -285,6 +285,39 @@ CS_STRING_MAP = {
     CS_RACE_POINTS: "race_points",
 }
 
+# WEAPONS
+WP_NONE=0
+WP_GAUNTLET=1
+WP_MACHINEGUN=2
+WP_SHOTGUN=3
+WP_GRENADE_LAUNCHER=4
+WP_ROCKET_LAUNCHER=5
+WP_LIGHTNING=6
+WP_RAILGUN=7
+WP_PLASMAGUN=8
+WP_BFG=9
+WP_GRAPPLING_HOOK=10
+WP_NAILGUN=11
+WP_PROX_LAUNCHER=12
+WP_CHAINGUN=13
+WP_HANDS=14
+WP_NUM_WEAPONS=15
+
+WP_STRING_MAP = {
+    WP_NONE: "none",
+    WP_GAUNTLET: "gauntlet",
+    WP_MACHINEGUN: "machinegun",
+    WP_SHOTGUN: "shotgun",
+    WP_GRENADE_LAUNCHER: "grenade_launcher",
+    WP_ROCKET_LAUNCHER: "rocket_launcher",
+    WP_LIGHTNING: "lightning",
+    WP_RAILGUN: "railgun",
+    WP_PLASMAGUN: "plasmagun",
+    WP_BFG: "bfg",
+    WP_GRAPPLING_HOOK: "grappling_hook",
+    WP_HANDS: "hands",
+}
+
 userinfo_map={'c1': 'color1',
               'c2': 'color2',
               'tt': 'team_target',
