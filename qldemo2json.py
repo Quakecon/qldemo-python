@@ -24,6 +24,7 @@ def main():
     list(d)
     json.dump([packet.flatten() for packet in d.packets], 
               sys.stdout, sort_keys=True, ensure_ascii=False, indent=2)
+    #json.dump(d.scores, sys.stdout, sort_keys=True, ensure_ascii=False, indent=2)
 
 if __name__ == '__main__':
     main()

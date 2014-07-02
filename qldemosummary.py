@@ -43,9 +43,8 @@ def main():
             if new_name:
                 player[new_name]=player[key]
                 del(player[key])
-        player['score']=d.gamestate.scores[clientNum]
         # If it's a game where teams make sense, translate the teamId into a team name
-        if int(d.gamestate.config['server_info']['g_gametype']) >= GT_TEAM:
+        if int(d.gamestate.config['serverinfo']['g_gametype']) >= GT_TEAM:
             player['team']=TEAM_STRING_MAP[player['team']]
         players.append(player)
 
@@ -66,22 +65,45 @@ def main():
     
     output = {'filename': args.file.split(os.sep)[-1],
               'gametype': gametype_to_string(
-                  d.gamestate.config['server_info']['g_gametype']),
+                  d.gamestate.config['serverinfo']['g_gametype']),
               'players': d.gamestate.players,
               'size': os.stat(args.file).st_size,
               'pov': d.gamestate.clientNum,
-              'timestamp': time.ctime(float(d.gamestate.config['server_info']['g_levelStartTime'])),
-              'mapname': d.gamestate.config['server_info']['mapname'],
-              'duration': duration,
-              'victor': None}
-    
-    ## Add team list, if it's a team type of game
-    if int(d.gamestate.config['server_info']['g_gametype']) >= GT_TEAM:
-        output['teams']=[{'name': 'TEAM_RED'},
-                         {'name': 'TEAM_BLUE'}]
-        for team in output['teams']:
-            team['score']=None
-    
+              'timestamp': time.ctime(float(d.gamestate.config['serverinfo']['g_levelStartTime'])),
+              'mapname': d.gamestate.config['serverinfo']['mapname'],
+              'duration': duration}
+
+    if d.scores:
+        output['scores'] = d.scores[-1]
+    elif int(d.gamestate.config['serverinfo']['g_gametype']) >= GT_TEAM:
+        output['scores']={}
+        output['scores']['TEAM_RED'] = {
+            'score': d.gamestate.config['scores1'].strip('"')}
+        output['scores']['TEAM_BLUE'] = {
+            'score': d.gamestate.config['scores2'].strip('"')}
+
+    if int(d.gamestate.config['serverinfo']['g_gametype']) >= GT_TEAM:
+        output['teams'] = {}
+        output['teams']['TEAM_RED'] = {}
+        output['teams']['TEAM_RED']['name'] = d.gamestate.config['redteamname']
+        output['teams']['TEAM_RED']['clan'] = d.gamestate.config['redteamclantag']
+        output['teams']['TEAM_RED']['timeouts_left'] = d.gamestate.config['timeouts_red']
+        output['teams']['TEAM_RED']['score'] = output['scores']['TEAM_RED']
+        output['teams']['TEAM_BLUE'] = {}
+        output['teams']['TEAM_BLUE']['name'] = d.gamestate.config['blueteamname']
+        output['teams']['TEAM_BLUE']['clan'] = d.gamestate.config['blueteamclantag']
+        output['teams']['TEAM_BLUE']['timeouts_left'] = d.gamestate.config['timeouts_blue']
+        output['teams']['TEAM_BLUE']['score'] = output['scores']['TEAM_BLUE']
+        victor = 'TEAM_RED' if int(output['scores']['TEAM_RED']) > int(output['scores']['TEAM_BLUE']) else None
+        victor = 'TEAM_BLUE' if int(output['scores']['TEAM_BLUE']) > int(output['scores']['TEAM_RED']) else victor
+        output['victor'] = victor
+    else: # DUEL, likely doesn't work for FFA
+        output['scores'][d.gamestate.config['1stplayer']]['score'] = d.gamestate.config['scores1'].strip('"')
+        output['scores'][d.gamestate.config['2ndplayer']]['score'] = d.gamestate.config['scores2'].strip('"')
+        victor = d.gamestate.config['1stplayer'] if int(output['scores'][d.gamestate.config['1stplayer']]['score']) > int(output['scores'][d.gamestate.config['2ndplayer']]['score']) else None
+        victor = d.gamestate.config['2ndplayer'] if int(output['scores'][d.gamestate.config['2ndplayer']]['score']) > int(output['scores'][d.gamestate.config['1stplayer']]['score']) else victor
+        output['victor'] = victor
+
     json.dump(output, 
               sys.stdout, 
               ensure_ascii=False,

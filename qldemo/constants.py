@@ -82,30 +82,42 @@ TEAM_SPECTATOR='3'
 TEAM_NUM_TEAMS='4'
 
 TEAM_STRING_MAP={
-    '0': None,
-    '1': 'Red',
-    '2': 'Blue',
-    '3': 'Spectator'
+    TEAM_FREE: 'NONE',
+    TEAM_RED: 'TEAM_RED',
+    TEAM_BLUE: 'TEAM_BLUE',
+    TEAM_SPECTATOR: 'SPECTATOR'
 }
 
 ## Gametypes
 GT_FFA=0                         # free for all
-GT_TOURNAMENT=1          # one on one tournament
-GT_SINGLE_PLAYER=2       # single player ffa
+GT_DUEL=1          # one on one tournament
+GT_RACE=2       # single player ffa
 GT_TEAM=3               # team deathmatch
-GT_CTF=4                 # capture the flag
-GT_1FCTF=5
-GT_OBELISK=6
-GT_HARVESTER=7
+GT_CA=4
+GT_CTF=5                 # capture the flag
+GT_1FCTF=6
+GT_OBELISK=7
+GT_HARVESTER=8
+GT_FREEZETAG=9
+GT_DOMINATION=10
+GT_ATTACK_AND_DEFEND=11
+GT_REDROVER=12
+GT_MAX_GAME_TYPE=13
 
 GT_STRING_MAP={GT_FFA: 'FFA',
-               GT_TOURNAMENT: '1v1 Tournament',
-               GT_SINGLE_PLAYER: 'Single Player FFA',
-               GT_TEAM: 'Team DM',
+               GT_DUEL: 'DUEL',
+               GT_RACE: 'RACE',
+               GT_TEAM: 'TEAM',
+               GT_CA: 'CA',
                GT_CTF: 'CTF',
                GT_1FCTF: '1FCTF',
-               GT_OBELISK: 'Obelisk',
-               GT_HARVESTER: 'Harvester'}
+               GT_OBELISK: 'OBELISK',
+               GT_HARVESTER: 'HARVESTER',
+               GT_FREEZETAG: 'FREEZETAG',
+               GT_DOMINATION: 'DOMINATION',
+               GT_ATTACK_AND_DEFEND: 'ATTACK_AND_DEFEND',
+               GT_REDROVER: 'REDROVER',
+}
 
 def gametype_to_string(i):
     i=int(i)

@@ -69,9 +69,11 @@ class QLDemo:
         self.gamestate.checksumFeed = huffman.readlong()
         return self.gamestate
 
-    def parse_configstring(self):
-        i = huffman.readshort()
-        string = huffman.readbigstring()
+    def parse_configstring(self, data=(None, None)):
+        i, string = data
+        if not i:
+            i = huffman.readshort()
+            string = huffman.readbigstring()
         dest=self.gamestate.configstrings
         fieldname=str(i)
         output=string
@@ -96,7 +98,6 @@ class QLDemo:
                 dest=self.gamestate.spectators
             else:
                 dest=self.gamestate.players
-            self.gamestate.scores[clientNum]=0
         if i >= CS_SOUNDS and i < CS_SOUNDS+MAX_SOUNDS:
             dest=self.gamestate.config
             fieldname='sound'+str(i-CS_SOUNDS)
@@ -154,7 +155,18 @@ class QLDemo:
         elif sc.cmd == "scores_ctf":
             sc = self.parse_ctf_scores(sc)
             self.scores.append(sc.scores)
+        elif sc.cmd == "scores":
+            sc = self.parse_old_scores(sc)
+            self.scores.append(sc.scores)
+        elif sc.cmd == 'cs' or sc.cmd == 'bcs':
+            self.update_configstring(sc)
         return sc
+
+    def update_configstring(self, command):
+        ls = command.string.split(' ')
+        cs_num = int(ls[0])
+        cs = ' '.join(ls[1:])
+        self.parse_configstring((cs_num, cs))
 
     def parse_duel_scores(self, command):
         offset = 1
@@ -264,7 +276,35 @@ class QLDemo:
             command.scores[client_num]['alive'] = ls[offset+55]
             offset+=19
         return command
-            
+
+    def parse_old_scores(self, command):
+        ls = command.string.split()
+        command.scores = {}
+        num_scores = int(ls[0])
+        command.scores['TEAM_RED'] = ls[1]
+        command.scores['TEAM_BLUE'] = ls[2]
+        offset=3
+        for client in range(num_scores):
+            client_num = ls[offset+0]
+            command.scores[client_num]={}
+            command.scores[client_num]['score'] = ls[offset+1]
+            command.scores[client_num]['ping'] = ls[offset+2]
+            command.scores[client_num]['time'] = ls[offset+3]
+            command.scores[client_num]['powerups'] = ls[offset+4]
+            command.scores[client_num]['accuracy'] = ls[offset+5]
+            command.scores[client_num]['impressive'] = ls[offset+6]
+            command.scores[client_num]['excellent'] = ls[offset+7]
+            command.scores[client_num]['gauntlet'] = ls[offset+8]
+            command.scores[client_num]['defend'] = ls[offset+9]
+            command.scores[client_num]['assist'] = ls[offset+10]
+            command.scores[client_num]['perfect'] = ls[offset+11]
+            command.scores[client_num]['captures'] = ls[offset+12]
+            command.scores[client_num]['alive'] = ls[offset+13]
+            command.scores[client_num]['kills'] = ls[offset+10]
+            command.scores[client_num]['deaths'] = ls[offset+11]
+            command.scores[client_num]['best_weapon'] = ls[offset+12]
+            offset+=18
+        return command
 
     def parse_snapshot(self):
         new_snap = Snapshot()

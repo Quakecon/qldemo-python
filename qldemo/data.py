@@ -14,7 +14,7 @@ class FlattenableObject:
                 continue
             if value.__class__ is dict:
                 out2={}
-                for k, v in value.iteritems():
+                for k, v in value.items():
                     if hasattr(v, 'flatten'):
                         out2[k]=v.flatten()
                     else:
