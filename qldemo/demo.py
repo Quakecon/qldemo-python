@@ -165,7 +165,7 @@ class QLDemo:
     def update_configstring(self, command):
         ls = command.string.split(' ')
         cs_num = int(ls[0])
-        cs = ' '.join(ls[1:])
+        cs = ' '.join(ls[1:]).strip('"')
         self.parse_configstring((cs_num, cs))
 
     def parse_duel_scores(self, command):

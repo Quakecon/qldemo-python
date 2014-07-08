@@ -44,8 +44,10 @@ def main():
                 player[new_name]=player[key]
                 del(player[key])
         # If it's a game where teams make sense, translate the teamId into a team name
-        if int(d.gamestate.config['serverinfo']['g_gametype']) >= GT_TEAM:
+        if int(d.gamestate.config['serverinfo']['g_gametype']) >= GT_TEAM and 'team' in player:
             player['team']=TEAM_STRING_MAP[player['team']]
+        if int(d.gamestate.config['serverinfo']['g_gametype']) >= GT_TEAM and 't' in player:
+            player['team']=TEAM_STRING_MAP[player['t']]
         players.append(player)
 
     # Calculate demo duration
@@ -93,16 +95,14 @@ def main():
 
     if int(d.gamestate.config['serverinfo']['g_gametype']) >= GT_TEAM:
         output['teams'] = {}
-        output['teams']['TEAM_RED'] = {}
-        output['teams']['TEAM_RED']['name'] = d.gamestate.config['redteamname']
-        output['teams']['TEAM_RED']['clan'] = d.gamestate.config['redteamclantag']
-        output['teams']['TEAM_RED']['timeouts_left'] = d.gamestate.config['timeouts_red']
-        output['teams']['TEAM_RED']['score'] = output['scores']['TEAM_RED']
-        output['teams']['TEAM_BLUE'] = {}
-        output['teams']['TEAM_BLUE']['name'] = d.gamestate.config['blueteamname']
-        output['teams']['TEAM_BLUE']['clan'] = d.gamestate.config['blueteamclantag']
-        output['teams']['TEAM_BLUE']['timeouts_left'] = d.gamestate.config['timeouts_blue']
-        output['teams']['TEAM_BLUE']['score'] = output['scores']['TEAM_BLUE']
+        for team in ['TEAM_RED','TEAM_BLUE']:
+            short = team.split('_')[1].lower()
+            output['teams'][team] = {}
+            output['teams'][team]['name'] = d.gamestate.config[short+'teamname'] if short+'teamname' in d.gamestate.config else None
+            output['teams'][team]['clan'] = d.gamestate.config[short+'teamclantag'] if short+'teamclantag' in d.gamestate.config else None
+            output['teams'][team]['timeouts_left'] = d.gamestate.config['timeouts_'+short] if 'timeouts_'+short in d.gamestate.config else None
+            output['teams'][team]['score'] = output['scores'][team]['score']
+
         victor = 'TEAM_RED' if int(output['scores']['TEAM_RED']['score']) > int(output['scores']['TEAM_BLUE']['score']) else None
         victor = 'TEAM_BLUE' if int(output['scores']['TEAM_BLUE']['score']) > int(output['scores']['TEAM_RED']['score']) else victor
         output['victor'] = victor
