@@ -36,7 +36,6 @@ def main():
     list(d)
 
     ## Munge playerInfo to conform to ColonelPanic's Needs
-    players=[]
     for clientNum, player in d.gamestate.players.items():
         for key, value in player.items():
             new_name=playerinfo_override.get(key, None)
@@ -48,7 +47,6 @@ def main():
             player['team']=TEAM_STRING_MAP[player['team']]
         if int(d.gamestate.config['serverinfo']['g_gametype']) >= GT_TEAM and 't' in player:
             player['team']=TEAM_STRING_MAP[player['t']]
-        players.append(player)
 
     # Calculate demo duration
     ## FIXME - I think serverTime is in msec, but it is a guess based
@@ -59,11 +57,13 @@ def main():
         if i.__class__ is Snapshot:
             first_snap=i
             break
-    for i in range(-1,-5,-1):
-        if d.packets[i].__class__ is Snapshot:
-            last_snap=d.packets[i]
+    rev = d.packets
+    rev.reverse()
+    for i in rev:
+        if i.__class__ is Snapshot:
+            last_snap=i
             break
-    duration = (last_snap.serverTime - first_snap.serverTime) / 1000
+    duration = (last_snap.serverTime - first_snap.serverTime) / 1000 if first_snap and last_snap else None
     
     output = {'filename': args.file.split(os.sep)[-1],
               'gametype': gametype_to_string(
@@ -73,10 +73,14 @@ def main():
               'pov': d.gamestate.clientNum,
               'timestamp': time.ctime(float(d.gamestate.config['serverinfo']['g_levelStartTime'])),
               'mapname': d.gamestate.config['serverinfo']['mapname'],
-              'duration': duration}
+              'duration': duration,
+              'server': {'hostname': d.gamestate.config['serverinfo']['sv_hostname'],
+                         'location': d.gamestate.config['serverinfo']['sv_location']},
+              'practice': True if d.gamestate.config['serverinfo']['sv_hostname'].startswith('Practice') else False
+          }
 
-    output['scores'] = d.scores[-1] if d.scores else {}
-
+    #output['scores'] = d.scores[-1] if d.scores else {}
+    output['scores'] = {}
     if int(d.gamestate.config['serverinfo']['g_gametype']) >= GT_TEAM:
         output['scores']['TEAM_RED'] = {}
         output['scores']['TEAM_BLUE'] = {}

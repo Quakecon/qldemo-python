@@ -45,15 +45,18 @@ class QLDemo:
             huffman.fill(length)
             ack = huffman.readlong()
             cmd = huffman.readbyte()
+            r = None
             if cmd == SVC_GAMESTATE: 
                 r = self.parse_gamestate()
             elif cmd == SVC_SERVERCOMMAND: 
                 r = self.parse_servercommand()
             elif cmd == SVC_SNAPSHOT:
                 r = self.parse_snapshot()
+                if len(self.snapshots) and r.serverTime == self.snapshots[-1].serverTime:
+                    raise StopIteration
                 self.snapshots.append(r)
             self.packets.append(r)
-            yield r
+            if r: yield r
 
     def parse_gamestate(self):
         ack=huffman.readlong()
@@ -149,16 +152,16 @@ class QLDemo:
         string = huffman.readstring()
         
         sc=ServerCommand(seq, string)
-        if sc.cmd == "scores_duel":
-            sc = self.parse_duel_scores(sc)
-            self.scores.append(sc.scores)
-        elif sc.cmd == "scores_ctf":
-            sc = self.parse_ctf_scores(sc)
-            self.scores.append(sc.scores)
-        elif sc.cmd == "scores":
-            sc = self.parse_old_scores(sc)
-            self.scores.append(sc.scores)
-        elif sc.cmd == 'cs' or sc.cmd == 'bcs':
+        #if sc.cmd == "scores_duel":
+        #    sc = self.parse_duel_scores(sc)
+        #    self.scores.append(sc.scores)
+        #elif sc.cmd == "scores_ctf":
+        #    sc = self.parse_ctf_scores(sc)
+        #    self.scores.append(sc.scores)
+        #elif sc.cmd == "scores":
+        #    sc = self.parse_old_scores(sc)
+        #    self.scores.append(sc.scores)
+        if sc.cmd == 'cs' or sc.cmd == 'bcs':
             self.update_configstring(sc)
         return sc
 
@@ -249,7 +252,7 @@ class QLDemo:
         command.scores['TEAM_BLUE']['invisibility_time']  = ls[32]
         command.scores['TEAM_BLUE']['flag_time']  = ls[33]
 
-        num_scores = ls[34]
+        num_scores = int(ls[34])
         command.scores['TEAM_RED']['score'] = ls[35]
         command.scores['TEAM_BLUE']['score'] = ls[36]
         offset = 0
@@ -309,9 +312,9 @@ class QLDemo:
     def parse_snapshot(self):
         new_snap = Snapshot()
         new_snap.serverTime=huffman.readlong()
-        delta_num = huffman.readbyte()
-        new_snap.snapFlags = huffman.readbyte()
-        new_snap.areamaskLen = huffman.readbyte()
+        #delta_num = huffman.readbyte()
+        #new_snap.snapFlags = huffman.readbyte()
+        #new_snap.areamaskLen = huffman.readbyte()
         #for i in range(new_snap.areamaskLen+1):
         #    new_snap.areamask.append(huffman.readbyte())
         #ps = self.parse_playerstate()
