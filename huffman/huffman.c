@@ -196,7 +196,7 @@ void Huff_increment( huff_t* huff, node_t* node ) {
 
 void Huff_addRef( huff_t* huff, byte ch ) {
     node_t *tnode, *tnode2;
-    node_t *tt = huff->loc[ch];
+    //node_t *tt = huff->loc[ch];
     if (huff->loc[ch] == NULL) { /* if this is the first transmission of this node */
         tnode = &(huff->nodeList[huff->blocNode++]);
         tnode2 = &(huff->nodeList[huff->blocNode++]);
@@ -298,10 +298,10 @@ void Huff_offsetReceive( node_t* node, int* ch, byte* fin, int* offset ) {
 /*        Com_Error(ERR_DROP, "Illegal tree!\n"); */
     }
 
-    if( node->symbol == 129 )
-    {
-      int a = 0;
-    }
+    /* if( node->symbol == 129 ) */
+    /* { */
+    /*   int a = 0; */
+    /* } */
 
     //fprintf( log, "%s, %d\n", s.c_str(), node->symbol );
     *ch = node->symbol;

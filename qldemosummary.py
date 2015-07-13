@@ -57,14 +57,15 @@ def main():
         if i.__class__ is Snapshot:
             first_snap=i
             break
-    rev = d.packets
-    rev.reverse()
-    for i in rev:
-        if i.__class__ is Snapshot:
-            last_snap=i
+    for i in range(-1,-10,-1):
+        if d.packets[i].__class__ is Snapshot:
+            last_snap=d.packets[i]
             break
-    duration = (last_snap.serverTime - first_snap.serverTime) / 1000 if first_snap and last_snap else None
-    
+    if first_snap and last_snap:
+        duration = (last_snap.serverTime - first_snap.serverTime) / 1000
+    else:
+        duration = None
+        
     output = {'filename': args.file.split(os.sep)[-1],
               'gametype': gametype_to_string(
                   d.gamestate.config['serverinfo']['g_gametype']),
