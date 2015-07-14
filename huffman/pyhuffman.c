@@ -338,6 +338,7 @@ PyMODINIT_FUNC PyInit_huffman( void )
   m = PyModule_Create(&moduledef);
   if (m == NULL)
     return NULL;
+  return m;
 }
 #else
 PyMODINIT_FUNC inithuffman( void )
