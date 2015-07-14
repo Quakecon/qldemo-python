@@ -76,7 +76,7 @@ def main():
               'mapname': d.gamestate.config['serverinfo']['mapname'],
               'duration': duration,
               'server': {'hostname': d.gamestate.config['serverinfo']['sv_hostname'],
-                         'location': d.gamestate.config['serverinfo']['sv_location']},
+                         'location': d.gamestate.config['serverinfo']['sv_location'] if 'sv_location' in d.gamestate.config['serverinfo'] else None},
               'practice': True if d.gamestate.config['serverinfo']['sv_hostname'].startswith('Practice') else False
           }
 
