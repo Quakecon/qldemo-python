@@ -29,7 +29,7 @@ def main():
     parser = argparse.ArgumentParser(
         description='Summarize, in JSON a QuakeLive Demo File (dm_73)')
     parser.add_argument('file',
-                        help='path of the dm_73 file to summarize')
+                        help='path of the dm_91 file to summarize')
     args = parser.parse_args()
 
     d = QLDemo(args.file)
@@ -51,22 +51,25 @@ def main():
     # Calculate demo duration
     ## FIXME - I think serverTime is in msec, but it is a guess based
     ## on a skim of the Q3A source. It'd be nice to verify
-    first_snap=None
-    last_snap=None
-    for i in d.packets:
-        if i.__class__ is Snapshot:
-            first_snap=i
-            break
-    for i in range(-1,-10,-1):
-        if d.packets[i].__class__ is Snapshot:
-            last_snap=d.packets[i]
-            break
-    if first_snap and last_snap:
-        duration = (last_snap.serverTime - first_snap.serverTime) / 1000
-    else:
-        duration = None
-        
+    # first_snap=None
+    # last_snap=None
+    # for i in d.packets:
+    #     if i.__class__ is Snapshot:
+    #         first_snap=i
+    #         break
+    # for i in range(-1,-10,-1):
+    #     if i in d.packets and d.packets[i].__class__ is Snapshot:
+    #         last_snap=d.packets[i]
+    #         break
+    # if first_snap and last_snap:
+    #     duration = (last_snap.serverTime - first_snap.serverTime) / 1000
+    # else:
+    #     duration = None
+    if not 'serverinfo' in d.gamestate.config:
+        sys.exit(1)
     output = {'filename': args.file.split(os.sep)[-1],
+              'guid': d.gamestate.config['matchguid'] if 'matchguid' in d.gamestate.config else None,
+              'pov_steamid': d.gamestate.config['pov_steamid'] if 'pov_steamid' in d.gamestate.config else None,
               'gametype': gametype_to_string(
                   d.gamestate.config['serverinfo']['g_gametype']),
               'players': d.gamestate.players,
@@ -74,43 +77,44 @@ def main():
               'pov': d.gamestate.clientNum,
               'timestamp': time.ctime(float(d.gamestate.config['serverinfo']['g_levelStartTime'])),
               'mapname': d.gamestate.config['serverinfo']['mapname'],
-              'duration': duration,
+              #'duration': duration,
               'server': {'hostname': d.gamestate.config['serverinfo']['sv_hostname'],
                          'location': d.gamestate.config['serverinfo']['sv_location'] if 'sv_location' in d.gamestate.config['serverinfo'] else None},
-              'practice': True if d.gamestate.config['serverinfo']['sv_hostname'].startswith('Practice') else False
+              'victor': d.gamestate.config['1stplayer'] if '1stplayer' in d.gamestate.config else None,
+              #'practice': True if d.gamestate.config['serverinfo']['sv_hostname'].startswith('Practice') else False
           }
 
     #output['scores'] = d.scores[-1] if d.scores else {}
-    output['scores'] = {}
-    if int(d.gamestate.config['serverinfo']['g_gametype']) >= GT_TEAM:
-        output['scores']['TEAM_RED'] = {}
-        output['scores']['TEAM_BLUE'] = {}
-        output['scores']['TEAM_RED']['score'] = d.gamestate.config['scores1'].strip('"')
-        output['scores']['TEAM_BLUE']['score'] = d.gamestate.config['scores2'].strip('"')
-    else:
-        if not d.gamestate.config['1stplayer'] in output['scores']:
-            output['scores'][d.gamestate.config['1stplayer']] = {}
-        if not d.gamestate.config['2ndplayer'] in output['scores']:
-            output['scores'][d.gamestate.config['2ndplayer']] = {}
-        output['scores'][d.gamestate.config['1stplayer']]['score'] = d.gamestate.config['scores1'].strip('"')
-        output['scores'][d.gamestate.config['2ndplayer']]['score'] = d.gamestate.config['scores2'].strip('"')
-        victor = d.gamestate.config['1stplayer'] if int(output['scores'][d.gamestate.config['1stplayer']]['score']) > int(output['scores'][d.gamestate.config['2ndplayer']]['score']) else None
-        victor = d.gamestate.config['2ndplayer'] if int(output['scores'][d.gamestate.config['2ndplayer']]['score']) > int(output['scores'][d.gamestate.config['1stplayer']]['score']) else victor
-        output['victor'] = victor
+    # output['scores'] = {}
+    # if int(d.gamestate.config['serverinfo']['g_gametype']) >= GT_TEAM:
+    #     output['scores']['TEAM_RED'] = {}
+    #     output['scores']['TEAM_BLUE'] = {}
+    #     output['scores']['TEAM_RED']['score'] = d.gamestate.config['scores1'].strip('"')
+    #     output['scores']['TEAM_BLUE']['score'] = d.gamestate.config['scores2'].strip('"')
+    # else:
+    #     if not d.gamestate.config['1stplayer'] in output['scores']:
+    #         output['scores'][d.gamestate.config['1stplayer']] = {}
+    #     if not d.gamestate.config['2ndplayer'] in output['scores']:
+    #         output['scores'][d.gamestate.config['2ndplayer']] = {}
+    #     output['scores'][d.gamestate.config['1stplayer']]['score'] = d.gamestate.config['scores1'].strip('"')
+    #     output['scores'][d.gamestate.config['2ndplayer']]['score'] = d.gamestate.config['scores2'].strip('"')
+    #     victor = d.gamestate.config['1stplayer'] if int(output['scores'][d.gamestate.config['1stplayer']]['score']) > int(output['scores'][d.gamestate.config['2ndplayer']]['score']) else None
+    #     victor = d.gamestate.config['2ndplayer'] if int(output['scores'][d.gamestate.config['2ndplayer']]['score']) > int(output['scores'][d.gamestate.config['1stplayer']]['score']) else victor
+    #     output['victor'] = victor
 
-    if int(d.gamestate.config['serverinfo']['g_gametype']) >= GT_TEAM:
-        output['teams'] = {}
-        for team in ['TEAM_RED','TEAM_BLUE']:
-            short = team.split('_')[1].lower()
-            output['teams'][team] = {}
-            output['teams'][team]['name'] = d.gamestate.config[short+'teamname'] if short+'teamname' in d.gamestate.config else None
-            output['teams'][team]['clan'] = d.gamestate.config[short+'teamclantag'] if short+'teamclantag' in d.gamestate.config else None
-            output['teams'][team]['timeouts_left'] = d.gamestate.config['timeouts_'+short] if 'timeouts_'+short in d.gamestate.config else None
-            output['teams'][team]['score'] = output['scores'][team]['score']
+    # if int(d.gamestate.config['serverinfo']['g_gametype']) >= GT_TEAM:
+    #     output['teams'] = {}
+    #     for team in ['TEAM_RED','TEAM_BLUE']:
+    #         short = team.split('_')[1].lower()
+    #         output['teams'][team] = {}
+    #         output['teams'][team]['name'] = d.gamestate.config[short+'teamname'] if short+'teamname' in d.gamestate.config else None
+    #         output['teams'][team]['clan'] = d.gamestate.config[short+'teamclantag'] if short+'teamclantag' in d.gamestate.config else None
+    #         output['teams'][team]['timeouts_left'] = d.gamestate.config['timeouts_'+short] if 'timeouts_'+short in d.gamestate.config else None
+    #         output['teams'][team]['score'] = output['scores'][team]['score']
 
-        victor = 'TEAM_RED' if int(output['scores']['TEAM_RED']['score']) > int(output['scores']['TEAM_BLUE']['score']) else None
-        victor = 'TEAM_BLUE' if int(output['scores']['TEAM_BLUE']['score']) > int(output['scores']['TEAM_RED']['score']) else victor
-        output['victor'] = victor
+    #     victor = 'TEAM_RED' if int(output['scores']['TEAM_RED']['score']) > int(output['scores']['TEAM_BLUE']['score']) else None
+    #     victor = 'TEAM_BLUE' if int(output['scores']['TEAM_BLUE']['score']) > int(output['scores']['TEAM_RED']['score']) else victor
+    #     output['victor'] = victor
 
     json.dump(output, 
               sys.stdout, 
