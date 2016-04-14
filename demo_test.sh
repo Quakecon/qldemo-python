@@ -1,9 +1,7 @@
 #!/bin/bash
 
-#. bin/activate
-
-(cd demos;
- for demo in `ls *dm_73`; do
+(cd demos
+ for demo in `ls *dm_*`; do
      timeout -s INT 10 qldemosummary.py $demo
      case $? in
 	 124)
